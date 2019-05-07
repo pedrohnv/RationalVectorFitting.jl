@@ -3,9 +3,9 @@ using LinearAlgebra
 function flag_poles(poles)
     """ Finding out which starting poles are complex """
     N = length(poles);
-    cindex = zeros(1,N);
+    cindex = zeros(Int, N);
     for m=1:N
-        if imag(poles[m])!=0
+        if abs(imag(poles[m])) >= eps(Float64)
             if m==1
                 cindex[m] = 1;
             else
@@ -375,6 +375,7 @@ function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
             end
         end
         ZER = LAMBD - B*transpose(C)/D;
+        ZER = Array{Float64,2}(ZER); #FIXME that should not be needed, but gives non-conjugate complex pairs...
         roetter = transpose(eigvals(ZER));
         unstables = map(r -> real(r) > 0, roetter);
         if stable
@@ -385,10 +386,10 @@ function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
         N = length(roetter);
         # =============================================
         #Sorterer polene s.a. de reelle kommer først:
-
         for n=1:N
             for m=n+1:N
-                if imag(roetter[m])==0 && imag(roetter[n])!=0
+                if (abs(imag(roetter[m])) <= eps(Float64)
+                    && abs(imag(roetter[n])) >= eps(Float64))
                     trans = roetter[n];
                     roetter[n] = roetter[m];
                     roetter[m] = trans;
@@ -419,7 +420,7 @@ function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
         LAMBD = diagm(0 => roetter);
         #B=ones(N,1);
         # Finding out which poles are complex :
-        cindex = flag_poles(poles);
+        cindex = flag_poles(roetter);
 
         # ===============================================================================
         # We now calculate the SER for f (new fitting), using the above calculated
@@ -452,7 +453,7 @@ function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
                     Dk[:,m] = weight ./(s .- LAMBD[m,m]);
                 elseif cindex[m]==1  #complex pole, 1st part
                     Dk[:,m] = weight ./(s .- LAMBD[m,m]) + weight ./(s .- conj(LAMBD[m,m]));
-                    Dk[:,m+1] = 1im*weight ./(s .- LAMBD[m,m]) - 1im*weight ./(s .- conj(LAMBD[m,m]));
+                    Dk[:,m+1] = 1im .*weight ./(s .- LAMBD[m,m]) - 1im .*weight ./(s .- conj(LAMBD[m,m]));
                 end
             end
             if asymp==1
@@ -539,7 +540,7 @@ function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
                 if asymp==2
                     SERD[n] = x[N+1];
                 elseif asymp==3
-                    SERE[n] = x(N+2);
+                    SERE[n] = x[N+2];
                     SERD[n] = x[N+1];
                 end
             end #for n=1:Nc

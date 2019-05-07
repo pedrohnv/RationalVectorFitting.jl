@@ -11,7 +11,7 @@
 # Last revised: 08.08.2008.
 # Created by:   Bjorn Gustavsen.
 # ================================
-#include("vectfit3.jl")
+include("vectfit3.jl")
 # logspace = exp10.(range(start, stop, length))
 #Frequency samples:
 Ns = 101;
@@ -35,7 +35,7 @@ skip_pole=false;
 skip_res=false;
 
 poles, rmserr, fit = vectfit3(f, s, poles, weight, relax, stable, asymp,
-                              skip_pole, skip_res)
+                              skip_pole, skip_res);
 f = transpose(f);
 fit = transpose(fit);
 println("rmserr = ", rmserr)
@@ -46,6 +46,7 @@ plot(imag(s), map(abs, f), xaxis=:log, yaxis=:log, label="func.",
      ylabel="Magnitude [p.u.]", xlabel="freq. (Hz)")
 plot!(imag(s), map(abs, fit), label="fitted")
 plot!(imag(s), map(abs, f - fit), label="error")
+
 # Phase
 plot(imag(s), map(rad2deg, map(angle, f)), xaxis=:log, label="func.",
      ylabel="Phase [deg]", xlabel="freq. (Hz)")
