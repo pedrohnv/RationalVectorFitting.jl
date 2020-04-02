@@ -21,7 +21,7 @@ function flag_poles(poles)
     return cindex
 end
 
-function vectfit3(f, s, poles, weight, relax=true, stable=true, asymp=2,
+function vectfit3(f, s, poles, weight; relax=true, stable=true, asymp=2,
                   skip_pole=false, skip_res=false)
     """
          ===========================================================
