@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier
+AnswerStrategy: recommended
+Authors: Pedro H. N. Vieira <phnvieira@proton.me>
+CodeOfConductContact: phnvieira@proton.me
+Indentation: 4
+JuliaMinVersion: '1.6'
+License: GPL-3.0
+LicenseCopyrightHolders: Pedro H. N. Vieira
+PackageName: VectorFitting
+PackageOwner: pedrohnv
+PackageUUID: 52b1e31a-230f-50d6-be04-0f5494ddfff6
+_commit: v0.10.1
+_src_path: https://github.com/abelsiqueira/BestieTemplate.jl

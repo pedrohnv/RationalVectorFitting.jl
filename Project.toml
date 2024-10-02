@@ -1,0 +1,7 @@
+name = "VectorFitting"
+uuid = "52b1e31a-230f-50d6-be04-0f5494ddfff6"
+authors = ["Pedro H. N. Vieira <phnvieira@proton.me>"]
+version = "0.1.0"
+
+[compat]
+julia = "1.6"
