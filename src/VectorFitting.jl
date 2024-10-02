@@ -1,6 +1,7 @@
 module VectorFitting
 
-export rational, recommended_init_poles, pole_identification, residue_identification, vector_fitting
+export rational,
+    recommended_init_poles, pole_identification, residue_identification, vector_fitting
 
 using LinearAlgebra
 
@@ -35,8 +36,8 @@ function recommended_init_poles(s, Npairs)
         s0 = imag(s[2])
     end
     s1 = imag(s[end])
-    init_poles = [(-0.01 + 1.0im) * sk for sk in range(s0, s1, length=Npairs÷2)]
-    init_poles = sort!([init_poles; conj.(init_poles)], by=cplxpair)
+    init_poles = [(-0.01 + 1.0im) * sk for sk in range(s0, s1, length = Npairs ÷ 2)]
+    init_poles = sort!([init_poles; conj.(init_poles)], by = cplxpair)
     return init_poles
 end
 
@@ -87,13 +88,13 @@ function pole_identification(s, f, poles, relaxed)
     b_sys = zeros(Nc * Nres)
     @inline build_subA!(A1_cplx, s, poles)  # left block
     for n = 1:Nc
-        A1_cplx[1:Ns, (Np + 3):Ncols] .= -f[1:Ns, n] .* A1_cplx[1:Ns, 1:Nres]  # right block
+        A1_cplx[1:Ns, (Np+3):Ncols] .= -f[1:Ns, n] .* A1_cplx[1:Ns, 1:Nres]  # right block
         A1_reim[1:Ns, :] .= real(A1_cplx)
-        A1_reim[(Ns + 1):(2Ns), :] .= imag(A1_cplx)
+        A1_reim[(Ns+1):(2Ns), :] .= imag(A1_cplx)
         if relaxed && n == Nc
-            A1_reim[end, 1:(Np + 2)] .= 0.0
+            A1_reim[end, 1:(Np+2)] .= 0.0
             for i = 1:Nres
-                A1_reim[end, Np + 2 + i] = real(sum(A1_cplx[:, i]))
+                A1_reim[end, Np+2+i] = real(sum(A1_cplx[:, i]))
             end
         end
         # Fast VF is a block-wise QR as we only want the last Nres values of
@@ -178,8 +179,8 @@ function residue_identification(s, f, poles)
                 residues[i, n] = X_sys[i, n]
             else
                 skip_next = true
-                residues[i, n] = complex(X_sys[i, n], X_sys[i + 1, n])
-                residues[i + 1, n] = conj(residues[i, n])
+                residues[i, n] = complex(X_sys[i, n], X_sys[i+1, n])
+                residues[i+1, n] = conj(residues[i, n])
             end
         end
         d[n] = X_sys[Np+1, n]
@@ -223,7 +224,15 @@ Multiport Systems Using a Fast Implementation of the Vector Fitting Method,"
 in IEEE Microwave and Wireless Components Letters, vol. 18, no. 6, pp. 383-385,
 June 2008, doi: 10.1109/LMWC.2008.922585
 """
-function vector_fitting(s, f, init_poles; relaxed=true, force_stable=true, maxiter=20, tol=1e-12)
+function vector_fitting(
+    s,
+    f,
+    init_poles;
+    relaxed = true,
+    force_stable = true,
+    maxiter = 20,
+    tol = 1e-12,
+)
     if !allequal(real(s))
         throw(error("It is expected that `allequal(real(s)) == true`"))
     end
@@ -231,7 +240,7 @@ function vector_fitting(s, f, init_poles; relaxed=true, force_stable=true, maxit
     if any(imag(s) .< 0.0)
         throw(error("It is expected that `all(imag(s) .>= 0) == true`"))
     end
-    
+
     if ndims(f) == 1
         Nc = 1
     elseif ndims(f) == 2
@@ -245,7 +254,7 @@ function vector_fitting(s, f, init_poles; relaxed=true, force_stable=true, maxit
         throw(error("`f` must have the same number of rows as `s`"))
     end
 
-    poles = sort!(complex(init_poles), by=cplxpair)
+    poles = sort!(complex(init_poles), by = cplxpair)
     fitted = similar(f)
     error_norm = Inf
     local residues, d, h
@@ -266,11 +275,11 @@ function vector_fitting(s, f, init_poles; relaxed=true, force_stable=true, maxit
         end
         residues, d, h = residue_identification(s, f, poles)
         for n = 1:Nc
-            fitted[:,n] .= rational(s, poles, residues[:,n], d[n], h[n])
+            fitted[:, n] .= rational(s, poles, residues[:, n], d[n], h[n])
         end
         error_norm = norm(f .- fitted, 2)
     end
-    perm = sortperm(poles, by=cplxpair)
+    perm = sortperm(poles, by = cplxpair)
     poles = poles[perm]
     for n = 1:Nc
         residues[:, n] = residues[perm, n]
