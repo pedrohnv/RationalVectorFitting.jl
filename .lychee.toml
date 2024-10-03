@@ -2,7 +2,7 @@ exclude = [
   "@ref",
   "^https://github.com/.*/releases/tag/v.*$",
   "^https://doi.org/FIXME$",
-  "^https://pedrohnv.github.io/VectorFitting.jl/stable$",
+  "^https://pedrohnv.github.io/RationalVectorFitting.jl/stable$",
   "zenodo.org/badge/DOI/FIXME$"
 ]
 
