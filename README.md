@@ -1,5 +1,25 @@
 # RationalVectorFitting
 
+Fast Relaxed Vector Fitting implementation in Julia.
+
+Given a transfer function $f(s) = y$, the Vector Fitting algorithm tries to find a rational approximation
+$$
+f(s) \approx \sum_{n=1}^N \frac{r_n}{s - a_n} + d + s\,h
+$$
+where $s$ is the complex frequency, $r_n$ are the complex residues, $a_n$ are the complex poles, $d$ and $h$ are real constants.
+
+The transfer function can be a vector $f(s) = \[y_1, \dots, y_m\]$ and the Vector Fitting algorithm will fit the response using the same set of poles $a_n$ for all $y_m$.
+
+A rational representation of a transfer function makes it easier to find a [state space canonical realization](https://en.wikipedia.org/wiki/Realization_(systems)#Canonical_realizations) of a system and to [perform convolutions](https://doi.org/10.4236/jamp.2022.106144).
+
+## References
+
+[1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency domain responses by vector fitting," in IEEE Transactions on Power Delivery, vol. 14, no. 3, pp. 1052-1061, July 1999, [doi: 10.1109/61.772353](https://doi.org/10.1109/61.772353).
+
+[2] B. Gustavsen, "Improving the pole relocating properties of vector fitting," in IEEE Transactions on Power Delivery, vol. 21, no. 3, pp. 1587-1592, July 2006, [doi: 10.1109/TPWRD.2005.860281](https://doi.org/10.1109/TPWRD.2005.860281).
+
+[3] D. Deschrijver, M. Mrozowski, T. Dhaene and D. De Zutter, "Macromodeling of Multiport Systems Using a Fast Implementation of the Vector Fitting Method," in IEEE Microwave and Wireless Components Letters, vol. 18, no. 6, pp. 383-385, June 2008, [doi: 10.1109/LMWC.2008.922585](https://doi.org/10.1109/LMWC.2008.922585).
+
 [![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://pedrohnv.github.io/RationalVectorFitting.jl/stable)
 [![In development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://pedrohnv.github.io/RationalVectorFitting.jl/dev)
 [![Build Status](https://github.com/pedrohnv/RationalVectorFitting.jl/workflows/Test/badge.svg)](https://github.com/pedrohnv/RationalVectorFitting.jl/actions)
