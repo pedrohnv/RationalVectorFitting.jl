@@ -45,7 +45,7 @@
     h0 = 2e-5
     freq = (range(0, 1e5, length = 200))
     s = 2im * pi * freq
-    f = VectorFitting.rational(s, poles0, residues0, d0, h0)
+    f = RationalVectorFitting.rational(s, poles0, residues0, d0, h0)
     init_poles =
         2π .* [
             -1e-2 + 1im,
@@ -60,9 +60,11 @@
         ]
     real_poles = filter(isreal, init_poles)
     complex_poles = filter(!isreal, init_poles)
-    init_poles =
-        sort!([real_poles; complex_poles; conj(complex_poles)], by = VectorFitting.cplxpair)
+    init_poles = sort!(
+        [real_poles; complex_poles; conj(complex_poles)],
+        by = RationalVectorFitting.cplxpair,
+    )
     poles, residues, d, h, fitted, error_norm =
-        VectorFitting.vector_fitting(s, f, init_poles)
+        RationalVectorFitting.vector_fitting(s, f, init_poles)
     @test error_norm < 1e-10
 end
