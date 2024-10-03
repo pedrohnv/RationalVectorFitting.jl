@@ -12,6 +12,30 @@ The transfer function can be a vector $f(s) = \[y_1, \dots, y_m\]$ and the Vecto
 
 A rational representation of a transfer function makes it easier to find a [state space canonical realization](https://en.wikipedia.org/wiki/Realization_(systems)#Canonical_realizations) of a system and to [perform convolutions](https://doi.org/10.4236/jamp.2022.106144).
 
+## Usage Example
+
+```julia
+using RationalVectorFitting
+using Plots
+
+Ns = 101
+freq = exp10.(range(0, 4, length = Ns))
+s = 2im * pi * freq
+poles0 = [-5.0, -100 - 500im, -100 + 500im]
+residues0 = [2.0, 30 - 40im, 30 + 40im]
+d0 = 0.5
+h0 = 0.0
+f = rational(s, poles0, residues0, d0, h0)
+init_poles = -2pi * exp10.(range(0, 4, length = 3))
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles)
+begin
+    p1 = plot(freq, abs.(f), label="f(s)", linecolor=:blue, xlabel="Frequency [Hz]", xaxis=:log, yaxis=:log, legend=:right)
+    plot!(freq, abs.(fitted), label="fitted(s)", linecolor=:darkorange)
+    plot!(freq, abs.(f - fitted), label="deviation", linecolor=:green)
+    display(p1)
+end
+```
+
 ## References
 
 [1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency domain responses by vector fitting," in IEEE Transactions on Power Delivery, vol. 14, no. 3, pp. 1052-1061, July 1999, [doi: 10.1109/61.772353](https://doi.org/10.1109/61.772353).
