@@ -4,7 +4,7 @@ Fast Relaxed Vector Fitting implementation in Julia.
 
 Given a transfer function $f(s) = y$, the Vector Fitting algorithm tries to find a rational approximation
 
-$$f(s) \approx \sum_{n=1}^N \frac{r_n}{s - a_n} + d + s\,h$$
+$$f(s) \approx \sum_{n=1}^N \frac{r_n}{s - a_n} + d + s h$$
 
 where $s$ is the complex frequency, $r_n$ are the complex residues, $a_n$ are the complex poles, $d$ and $h$ are real constants.
 
