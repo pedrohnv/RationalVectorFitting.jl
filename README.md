@@ -1,6 +1,16 @@
-# VectorFitting
+# RationalVectorFitting
 
 Fast Relaxed Vector Fitting implementation in Julia.
+
+Given a transfer function $f(s) = y$, the Vector Fitting algorithm tries to find a rational approximation
+
+$$f(s) \approx \sum_{n=1}^N \frac{r_n}{s - a_n} + d + s\,h$$
+
+where $s$ is the complex frequency, $r_n$ are the complex residues, $a_n$ are the complex poles, $d$ and $h$ are real constants.
+
+The transfer function can be a vector $f(s) = \[y_1, \dots, y_m\]$ and the Vector Fitting algorithm will fit the response using the same set of poles $a_n$ for all $y_m$.
+
+A rational representation of a transfer function makes it easier to find a [state space canonical realization](https://en.wikipedia.org/wiki/Realization_(systems)#Canonical_realizations) of a system and to [perform convolutions](https://doi.org/10.4236/jamp.2022.106144).
 
 ## References
 
@@ -10,25 +20,25 @@ Fast Relaxed Vector Fitting implementation in Julia.
 
 [3] D. Deschrijver, M. Mrozowski, T. Dhaene and D. De Zutter, "Macromodeling of Multiport Systems Using a Fast Implementation of the Vector Fitting Method," in IEEE Microwave and Wireless Components Letters, vol. 18, no. 6, pp. 383-385, June 2008, [doi: 10.1109/LMWC.2008.922585](https://doi.org/10.1109/LMWC.2008.922585).
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://pedrohnv.github.io/VectorFitting.jl/stable)
-[![In development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://pedrohnv.github.io/VectorFitting.jl/dev)
-[![Build Status](https://github.com/pedrohnv/VectorFitting.jl/workflows/Test/badge.svg)](https://github.com/pedrohnv/VectorFitting.jl/actions)
-[![Test workflow status](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Test.yml?query=branch%3Amain)
-[![Lint workflow Status](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Lint.yml/badge.svg?branch=main)](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Lint.yml?query=branch%3Amain)
-[![Docs workflow Status](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/pedrohnv/VectorFitting.jl/actions/workflows/Docs.yml?query=branch%3Amain)
+[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://pedrohnv.github.io/RationalVectorFitting.jl/stable)
+[![In development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://pedrohnv.github.io/RationalVectorFitting.jl/dev)
+[![Build Status](https://github.com/pedrohnv/RationalVectorFitting.jl/workflows/Test/badge.svg)](https://github.com/pedrohnv/RationalVectorFitting.jl/actions)
+[![Test workflow status](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Test.yml?query=branch%3Amain)
+[![Lint workflow Status](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Lint.yml/badge.svg?branch=main)](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Lint.yml?query=branch%3Amain)
+[![Docs workflow Status](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/pedrohnv/RationalVectorFitting.jl/actions/workflows/Docs.yml?query=branch%3Amain)
 
-[![Coverage](https://codecov.io/gh/pedrohnv/VectorFitting.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/pedrohnv/VectorFitting.jl)
+[![Coverage](https://codecov.io/gh/pedrohnv/RationalVectorFitting.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/pedrohnv/RationalVectorFitting.jl)
 [![DOI](https://zenodo.org/badge/DOI/FIXME)](https://doi.org/FIXME)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![All Contributors](https://img.shields.io/github/all-contributors/pedrohnv/VectorFitting.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
+[![All Contributors](https://img.shields.io/github/all-contributors/pedrohnv/RationalVectorFitting.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
 
 ## How to Cite
 
-If you use VectorFitting.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/pedrohnv/VectorFitting.jl/blob/main/CITATION.cff).
+If you use RationalVectorFitting.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/pedrohnv/RationalVectorFitting.jl/blob/main/CITATION.cff).
 
 ## Contributing
 
-If you want to make contributions of any kind, please first that a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://pedrohnv.github.io/VectorFitting.jl/dev/90-contributing/).
+If you want to make contributions of any kind, please first that a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://pedrohnv.github.io/RationalVectorFitting.jl/dev/90-contributing/).
 
 ---
 

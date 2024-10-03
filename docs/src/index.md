@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = VectorFitting
+CurrentModule = RationalVectorFitting
 ```
 
-# VectorFitting
+# RationalVectorFitting
 
-Documentation for [VectorFitting](https://github.com/pedrohnv/VectorFitting.jl).
+Documentation for [RationalVectorFitting](https://github.com/pedrohnv/RationalVectorFitting.jl).
 
 ## Contributors
 

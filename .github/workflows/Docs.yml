@@ -43,9 +43,9 @@ jobs:
             - run: |
                   julia --project=docs -e '
                     using Documenter: DocMeta, doctest
-                    using VectorFitting
-                    DocMeta.setdocmeta!(VectorFitting, :DocTestSetup, :(using VectorFitting); recursive=true)
-                    doctest(VectorFitting)'
+                    using RationalVectorFitting
+                    DocMeta.setdocmeta!(RationalVectorFitting, :DocTestSetup, :(using RationalVectorFitting); recursive=true)
+                    doctest(RationalVectorFitting)'
             - run: julia --project=docs docs/make.jl
               env:
                   JULIA_PKG_SERVER: ""

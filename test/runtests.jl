@@ -1,4 +1,4 @@
-using VectorFitting
+using RationalVectorFitting
 using Test
 
 
