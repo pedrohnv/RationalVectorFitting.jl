@@ -217,7 +217,7 @@ using a set of initial poles `init_poles`.
 
 `f` can be a matrix of dimensions `(Ns, Nc)` and the fitting will be over
 its columns with a set of common poles.
-
+c
 `relaxed` controls the nontriviality constraint. See [2].
 
 `force_stable` controls if unstable poles should be reflected to the semi-left
