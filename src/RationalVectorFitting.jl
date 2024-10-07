@@ -86,7 +86,7 @@ function pole_identification(s, f, poles, relaxed)
     Nc = (ndims(f) == 1) ? 1 : size(f)[2]
     A_sys = Array{Float64}(undef, (Nc * Nres), Nres)
     b_sys = zeros(Nc * Nres)
-    @inline build_subA!(A1_cplx, s, poles)  # left block
+    build_subA!(A1_cplx, s, poles)  # left block
     for n = 1:Nc
         A1_cplx[1:Ns, (Np+3):Ncols] .= -f[1:Ns, n] .* A1_cplx[1:Ns, 1:Nres]  # right block
         A1_reim[1:Ns, :] .= real(A1_cplx)
@@ -164,7 +164,7 @@ function residue_identification(s, f, poles)
     A_sys = Array{Float64}(undef, Nrows, Ncols)
     X_sys = Array{Float64}(undef, Ncols, Nc)
 
-    @inline build_subA!(A1_cplx, s, poles)
+    build_subA!(A1_cplx, s, poles)
     A_sys[1:Ns, :] .= real(A1_cplx)
     A_sys[(Ns+1):end, :] .= imag(A1_cplx)
     X_sys = A_sys \ [real(f); imag(f)]
