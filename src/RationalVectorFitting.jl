@@ -48,7 +48,7 @@ end
 Builds the submatrix with the `1 / (s - p)`, `1.0` and `s` coefficients.
 It is assumed that the poles are sorted by cplxpair.
 """
-function build_subA!(A1, s, poles)
+@inline function build_subA!(A1, s, poles)
     Ns = length(s)
     Np = length(poles)
     skip_next = false
@@ -71,34 +71,37 @@ end
 
 
 """
-    pole_identification(s, f, poles, relaxed)
+    pole_identification(s, f, poles, weight, relaxed)
 
 Stage 1 of the Vector Fitting.
 """
-function pole_identification(s, f, poles, relaxed)
+function pole_identification(s, f, poles, weight, relaxed)
     Ns = length(s)
     Np = length(poles)
     Nres = Np + relaxed
     Ncols = Np + 2 + Nres
-    A1_cplx = Array{ComplexF64}(undef, Ns, Ncols)
+    A1_cplx = zeros(ComplexF64, Ns, Ncols)
     Nrows = 2 * Ns + relaxed
-    A1_reim = Array{Float64}(undef, Nrows, Ncols)
+    A1_reim = zeros(Nrows, Ncols)
     Nc = (ndims(f) == 1) ? 1 : size(f)[2]
-    A_sys = Array{Float64}(undef, (Nc * Nres), Nres)
+    A_sys = zeros((Nc * Nres), Nres)
     b_sys = zeros(Nc * Nres)
-    @inline build_subA!(A1_cplx, s, poles)  # left block
+    x_sys = view(b_sys, 1:Nres)
+    scale = sqrt(sum([norm(weight[1:Ns, n] .* f[1:Ns, n])^2 for n = 1:Nc]))
+    scale_Ns = scale / Ns
+    build_subA!(A1_cplx, s, poles)  # left block
     for n = 1:Nc
+        A1_cplx[1:Ns, 1:Ncols] .*= weight[1:Ns, n]
         A1_cplx[1:Ns, (Np+3):Ncols] .= -f[1:Ns, n] .* A1_cplx[1:Ns, 1:Nres]  # right block
         A1_reim[1:Ns, :] .= real(A1_cplx)
         A1_reim[(Ns+1):(2Ns), :] .= imag(A1_cplx)
         if relaxed && n == Nc
             A1_reim[end, 1:(Np+2)] .= 0.0
             for i = 1:Nres
-                A1_reim[end, Np+2+i] = real(sum(A1_cplx[:, i]))
+                A1_reim[end, Np+2+i] = real(sum(A1_cplx[:, i]) * scale_Ns)
             end
         end
-        # Fast VF is a block-wise QR as we only want the last Nres values of
-        # the solution. See [3].
+        # Fast VF is a block-wise QR as we only want the last Nres values of the solution. See [3].
         Q, R = qr!(A1_reim)
         i1 = (Np + 3)
         i2 = i1 + Np - 1 + relaxed
@@ -106,22 +109,29 @@ function pole_identification(s, f, poles, relaxed)
         k2 = k1 + Np - 1 + relaxed
         A_sys[k1:k2, :] .= R[i1:i2, i1:i2]
         if relaxed && n == Nc
-            b_sys[k1:k2] .= Q[end, i1:i2] * Ns
+            b_sys[k1:k2] .= Q[end, i1:i2] * scale
         elseif !relaxed
-            b_sys[k1:k2] .= transpose(Q[:, i1:i2]) * [real(f[1:Ns, n]); imag(f[1:Ns, n])]
+            fw = f[1:Ns, n] .* weight[1:Ns, n]
+            b_sys[k1:k2] .= transpose(Q[:, i1:i2]) * [real(fw); imag(fw)]
         end
     end
-    ldiv!(qr!(A_sys), b_sys)  # b = A \ b
-
+    norm_cols = [norm(A_sys[:, n]) for n = 1:Nres]
+    for n = 1:Nres
+        A_sys[:, n] ./= norm_cols[n]
+    end
+    ldiv!(qr!(A_sys), b_sys)  # x = A \ b
+    x_sys[:] ./= norm_cols
     if relaxed
-        sig_d = abs(b_sys[end])
-        if sig_d < 1e-12
-            b_sys[end] = 1e-8 * b_sys[end] / sig_d
+        sig_d = abs(x_sys[end])
+        if sig_d < 1e-8
+            x_sys[end] = 1e-8 #* x_sys[end] / sig_d
             @warn "`d` of sigma too small. Consider stopping execution and setting `relaxed=false`. Resuming..."
+        elseif sig_d > 1e8
+            x_sys[end] = 1e8 #* x_sys[end] / sig_d
+            @warn "`d` of sigma too big. Consider stopping execution and setting `relaxed=false`. Resuming..."
         end
-        b_sys[1:(end-1)] ./= b_sys[end]  # scale sigma's residues by its `d`
+        x_sys[1:(end-1)] ./= x_sys[end]  # scale sigma's residues by its `d`
     end
-
     H = zeros(Np, Np)
     skip_next = false
     for (i, p) in enumerate(poles)
@@ -130,14 +140,14 @@ function pole_identification(s, f, poles, relaxed)
             continue
         elseif isreal(p)
             skip_next = false
-            H[:, i] .= -b_sys[i]
+            H[:, i] .= -x_sys[i]
             H[i, i] += p
         else
             skip_next = true
-            H[1:2:end, i] .= -2.0 * b_sys[i]
-            H[1:2:end, i+1] .= -2.0 * b_sys[i+1]
+            H[1:2:end, i] .= -2.0 * x_sys[i]
             H[i, i] += real(p)
             H[i+1, i] += -imag(p)
+            H[1:2:end, i+1] .= -2.0 * x_sys[i+1]
             H[i, i+1] += imag(p)
             H[i+1, i+1] += real(p)
         end
@@ -147,52 +157,60 @@ end
 
 
 """
-    residue_identification(s, f, poles)
+    residue_identification(s, f, poles, weight)
 
-Stage 2 of the Vector Fitting.
+Stage 2 of the Vector Fitting. This should be called separately for each column
+of `f` and `weight`.
 """
-function residue_identification(s, f, poles)
+function residue_identification(s, f, poles, weight)
     Ns = length(s)
     Np = length(poles)
-    Nc = (ndims(f) == 1) ? 1 : size(f)[2]
-    residues = Array{ComplexF64}(undef, Np, Nc)
-    d = zeros(Nc)
-    h = similar(d)
+    residues = similar(poles)
     Nrows = 2 * Ns
     Ncols = Np + 2
-    A1_cplx = Array{ComplexF64}(undef, Ns, Ncols)
-    A_sys = Array{Float64}(undef, Nrows, Ncols)
-    X_sys = Array{Float64}(undef, Ncols, Nc)
-
-    @inline build_subA!(A1_cplx, s, poles)
-    A_sys[1:Ns, :] .= real(A1_cplx)
-    A_sys[(Ns+1):end, :] .= imag(A1_cplx)
-    X_sys = A_sys \ [real(f); imag(f)]
-    for n = 1:Nc
-        skip_next = false
-        for (i, p) in enumerate(poles)
-            if skip_next
-                skip_next = false
-                continue
-            elseif isreal(p)
-                skip_next = false
-                residues[i, n] = X_sys[i, n]
-            else
-                skip_next = true
-                residues[i, n] = complex(X_sys[i, n], X_sys[i+1, n])
-                residues[i+1, n] = conj(residues[i, n])
-            end
-        end
-        d[n] = X_sys[Np+1, n]
-        h[n] = X_sys[Np+2, n]
+    A1_cplx = zeros(ComplexF64, Ns, Ncols)
+    build_subA!(A1_cplx, s, poles)
+    A1_cplx .*= weight
+    A_sys = [real(A1_cplx); imag(A1_cplx)]
+    norm_cols = [norm(A_sys[:, n]) for n = 1:Ncols]
+    for n = 1:Ncols
+        A_sys[:, n] ./= norm_cols[n]
     end
+    B_cplx = f .* weight
+    X_sys = A_sys \ [real(B_cplx); imag(B_cplx)]
+    X_sys ./= norm_cols
+    skip_next = false
+    for (i, p) in enumerate(poles)
+        if skip_next
+            skip_next = false
+            continue
+        elseif isreal(p)
+            skip_next = false
+            residues[i] = X_sys[i]
+        else
+            skip_next = true
+            residues[i] = complex(X_sys[i], X_sys[i+1])
+            residues[i+1] = conj(residues[i])
+        end
+    end
+    d = X_sys[Np+1]
+    h = X_sys[Np+2]
     return residues, d, h
 end
 
 
 
 """
-    vector_fitting(s, f, init_poles; relaxed=true, force_stable=true, maxiter=20, tol=1e-12)
+    vector_fitting(
+    s,
+    f,
+    init_poles,
+    weight = 1;
+    relaxed = true,
+    force_stable = true,
+    maxiter = 5,
+    tol = 1e-12,
+)
 
 Fast Relaxed Vector Fitting of the array `f` with complex frequency `s`
 using a set of initial poles `init_poles`.
@@ -227,10 +245,11 @@ June 2008, doi: 10.1109/LMWC.2008.922585
 function vector_fitting(
     s,
     f,
-    init_poles;
+    init_poles,
+    weight = 1;
     relaxed = true,
     force_stable = true,
-    maxiter = 20,
+    maxiter = 5,
     tol = 1e-12,
 )
     if !allequal(real(s))
@@ -254,17 +273,30 @@ function vector_fitting(
         throw(error("`f` must have the same number of rows as `s`"))
     end
 
+    if typeof(weight) <: Number
+        weight = fill(weight, size(f))
+    elseif size(weight) != size(f)
+        throw(
+            error(
+                "It is expected `weight` to be a scalar or to have the same dimensions as f.",
+            ),
+        )
+    end
+
     poles = sort!(complex(init_poles), by = cplxpair)
+    Np = length(poles)
+    residues = zeros(ComplexF64, Np, Nc)
+    d = zeros(Nc)
+    h = zeros(Nc)
     fitted = similar(f)
-    error_norm = Inf
-    local residues, d, h
+    local error_norm = Inf
     for iter = 1:maxiter
         if error_norm < tol
             println("convergence achieved at iter. = $(iter)")
             println("error_norm = $(error_norm)")
             break
         end
-        poles = pole_identification(s, f, poles, relaxed)
+        poles = pole_identification(s, f, poles, weight, relaxed)
         if force_stable
             for (i, p) in enumerate(poles)
                 re_p, im_p = reim(p)
@@ -273,8 +305,9 @@ function vector_fitting(
                 end
             end
         end
-        residues, d, h = residue_identification(s, f, poles)
         for n = 1:Nc
+            residues[:, n], d[n], h[n] =
+                residue_identification(s, f[:, n], poles, weight[:, n])
             fitted[:, n] .= rational(s, poles, residues[:, n], d[n], h[n])
         end
         error_norm = norm(f .- fitted, 2)
