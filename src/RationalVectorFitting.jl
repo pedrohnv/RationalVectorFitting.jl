@@ -117,7 +117,7 @@ function pole_identification(s, f, poles, relaxed)
         sig_d = abs(b_sys[end])
         if sig_d < 1e-12
             b_sys[end] = 1e-8 * b_sys[end] / sig_d
-            @warn "`d` of sigma too small at `iter. = $(iter)`. Consider stopping execution and setting `relaxed=false`. Resuming..."
+            @warn "`d` of sigma too small. Consider stopping execution and setting `relaxed=false`. Resuming..."
         end
         b_sys[1:(end-1)] ./= b_sys[end]  # scale sigma's residues by its `d`
     end
