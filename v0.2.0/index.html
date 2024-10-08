@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>RationalVectorFitting.jl · RationalVectorFitting.jl</title><meta name="title" content="RationalVectorFitting.jl · RationalVectorFitting.jl"/><meta property="og:title" content="RationalVectorFitting.jl · RationalVectorFitting.jl"/><meta property="twitter:title" content="RationalVectorFitting.jl · RationalVectorFitting.jl"/><meta name="description" content="Documentation for RationalVectorFitting.jl."/><meta property="og:description" content="Documentation for RationalVectorFitting.jl."/><meta property="twitter:description" content="Documentation for RationalVectorFitting.jl."/><meta property="og:url" content="https://pedrohnv.github.io/RationalVectorFitting.jl/"/><meta property="twitter:url" content="https://pedrohnv.github.io/RationalVectorFitting.jl/"/><link rel="canonical" href="https://pedrohnv.github.io/RationalVectorFitting.jl/"/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>RationalVectorFitting.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>RationalVectorFitting.jl</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#Bibliography"><span>Bibliography</span></a></li></ul></li><li><a class="tocitem" href="90-contributing/">Contributing guidelines</a></li><li><a class="tocitem" href="91-developer/">Developer documentation</a></li><li><a class="tocitem" href="95-reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>RationalVectorFitting.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>RationalVectorFitting.jl</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/pedrohnv/RationalVectorFitting.jl/blob/main/docs/src/index.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="RationalVectorFitting.jl"><a class="docs-heading-anchor" href="#RationalVectorFitting.jl">RationalVectorFitting.jl</a><a id="RationalVectorFitting.jl-1"></a><a class="docs-heading-anchor-permalink" href="#RationalVectorFitting.jl" title="Permalink"></a></h1><p>Documentation for <a href="https://github.com/pedrohnv/RationalVectorFitting.jl">RationalVectorFitting.jl</a>, a Fast Relaxed Vector Fitting algorithm in Julia.</p><p>Given a transfer function <span>$f(s) = y$</span>, the Vector Fitting algorithm tries to find a rational approximation</p><p class="math-container">\[f(s) \approx \sum_{n=1}^N \frac{r_n}{s - a_n} + d + s h\]</p><p>where <span>$s$</span> is the complex frequency, <span>$r_n$</span> are the complex residues, <span>$a_n$</span> are the complex poles, <span>$d$</span> and <span>$h$</span> are real constants.</p><p>The transfer function can be a vector <span>$f(s) = [y_1, \dots, y_m]$</span> and the Vector Fitting algorithm will fit the response using the same set of poles <span>$a_n$</span> for all <span>$y_m$</span>.</p><p>A rational representation of a transfer function makes it easier to find a <a href="https://en.wikipedia.org/wiki/Realization_(systems)#Canonical_realizations">state space canonical realization</a> of a system and to <a href="https://doi.org/10.4236/jamp.2022.106144">perform convolutions</a>.</p><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><h3 id="Example-1"><a class="docs-heading-anchor" href="#Example-1">Example 1</a><a id="Example-1-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1" title="Permalink"></a></h3><p>This first example fits an order 3 smooth function using a set of real initial poles.</p><pre><code class="language-julia hljs">using RationalVectorFitting
+using Plots
+
+freq = exp10.(range(0, 4, length = 101))  # logspace
+s = 2im * pi * freq
+poles1 = [-5.0, -100 - 500im, -100 + 500im]
+residues1 = [2.0, 30 - 40im, 30 + 40im]
+d1 = 0.5
+h1 = 0.0
+f1 = rational(s, poles1, residues1, d1, h1)
+
+init_poles = -2pi * exp10.(range(0, 4, length = 3))
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f1, init_poles)
+
+p1 = plot(
+    freq,
+    abs.(f1),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    xaxis = :log,
+    yaxis = :log,
+    legend = :right,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f1 - fitted), label = &quot;deviation&quot;, linecolor = :green)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">convergence achieved at iter. = 2
+error_norm = 2.4407697419070694e-13</code></pre><p><img src="ex1.svg" alt="ex1"/></p><hr/><h3 id="Example-2"><a class="docs-heading-anchor" href="#Example-2">Example 2</a><a id="Example-2-1"></a><a class="docs-heading-anchor-permalink" href="#Example-2" title="Permalink"></a></h3><p>Fitting an order 18 function.</p><pre><code class="language-julia hljs">using RationalVectorFitting
+using Plots
+
+poles1 = 2π .* [
+    -41000,
+    -4500,
+    -100 - 5000im,
+    -100 + 5000im,
+    -120 - 15000im,
+    -120 + 15000im,
+    -3000 - 35000im,
+    -3000 + 35000im,
+    -200 - 45000im,
+    -200 + 45000im,
+    -1500 - 45000im,
+    -1500 + 45000im,
+    -500 - 70000im,
+    -500 + 70000im,
+    -1000 - 73000im,
+    -1000 + 73000im,
+    -2000 - 90000im,
+    -2000 + 90000im,
+]
+
+residues1 = 2π .* [
+    -83000,
+    -3000,
+    -5 - 7000im,
+    -5 + 7000im,
+    -20 - 18000im,
+    -20 + 18000im,
+    6000 - 45000im,
+    6000 + 45000im,
+    40 - 60000im,
+    40 + 60000im,
+    90 - 10000im,
+    90 + 10000im,
+    50000 - 80000im,
+    50000 + 80000im,
+    1000 - 45000im,
+    1000 + 45000im,
+    -5000 - 92000im,
+    -5000 + 92000im,
+]
+
+d1 = 0.2
+h1 = 2e-5
+
+freq = (range(0, 1e5, length = 200))
+s = 2im * pi * freq
+f1 = rational(s, poles1, residues1, d1, h1)
+
+init_poles = 2π .* [
+    -1e-2 + 1im,
+    -1.11e2 + 1.11e4im,
+    -2.22e2 + 2.22e4im,
+    -3.33e2 + 3.33e4im,
+    -4.44e2 + 4.44e4im,
+    -5.55e2 + 5.55e4im,
+    -6.66e2 + 7.77e4im,
+    -8.88e2 + 8.88e4im,
+    -1e3 + 1e5im,
+]
+# now we add the missing half of complex pairs
+real_poles = filter(isreal, init_poles)
+complex_poles = filter(!isreal, init_poles)
+init_poles = sort!([real_poles; complex_poles; conj(complex_poles)], by = cplxpair)
+
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f1, init_poles)
+
+p1 = plot(
+    freq,
+    abs.(f1),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    yaxis = :log,
+    legend = :right,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f1 - fitted), label = &quot;deviation&quot;, linecolor = :green)</code></pre><p><img src="ex2.svg" alt="ex2"/></p><hr/><h3 id="Example-3"><a class="docs-heading-anchor" href="#Example-3">Example 3</a><a id="Example-3-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3" title="Permalink"></a></h3><p>Order 6 fitting of the measured admittance function from a distribution transformer, which we took from <a href="https://www.sintef.no/en/software/vector-fitting/downloads/vfit3/">SINTEF&#39;s VFIT3</a>.</p><pre><code class="language-julia hljs">using RationalVectorFitting
+using Plots
+
+fid1 = split.(readlines(&quot;03PK10.txt&quot;))
+f = zeros(ComplexF64, 160)
+for k = 1:160
+    A1 = parse(Float64, fid1[k+1][1])
+    A2 = parse(Float64, fid1[k+1][2])
+    f[k] = A1 * exp(1im * A2 * pi / 180)
+end
+w = 2pi * range(0, 10e6, length = 401)
+w = w[2:161]
+s = 1im .* w
+freq = imag(s) ./ (2pi)
+
+N = 6  # Order of approximation
+init_poles = recommended_init_poles(s, N)
+
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles)
+
+p1 = plot(
+    freq,
+    abs.(f),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    yaxis = :log,
+    legend = :right,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f - fitted), label = &quot;deviation&quot;, linecolor = :green)
+
+p2 = plot(
+    freq,
+    rad2deg.(angle.(f)),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Phase angle [deg]&quot;,
+    legend = :right,
+)
+plot!(freq, rad2deg.(angle.(fitted)), label = &quot;fitted&quot;, linecolor = :darkorange)</code></pre><p><img src="ex3-mag.svg" alt="ex3-mag"/></p><p><img src="ex3-phase.svg" alt="ex3-phase"/></p><hr/><h3 id="Example-4"><a class="docs-heading-anchor" href="#Example-4">Example 4</a><a id="Example-4-1"></a><a class="docs-heading-anchor-permalink" href="#Example-4" title="Permalink"></a></h3><p>Order 50 fitting of the first column of a six-terminal Frequency Domain Network Equivalent (FDNE) system. We took the data from <a href="https://www.sintef.no/en/software/vector-fitting/downloads/vfit3/">SINTEF&#39;s VFIT3</a>.</p><pre><code class="language-julia hljs">using RationalVectorFitting
+using Plots
+
+open(&quot;fdne.txt&quot;, &quot;r&quot;) do fid1
+    Nc = parse(Int, readline(fid1))
+    Ns = parse(Int, readline(fid1))
+    global s = Array{ComplexF64}(undef, Ns)
+    global bigY = Array{ComplexF64}(undef, Nc, Nc, Ns)
+    for k = 1:Ns
+        s[k] = complex(0, parse(Float64, readline(fid1)))
+        for row = 1:Nc
+            for col = 1:Nc
+                a1 = parse(Float64, readline(fid1))
+                a2 = parse(Float64, readline(fid1))
+                bigY[row, col, k] = complex(a1, a2)
+            end
+        end
+    end
+end
+f = transpose(bigY[:, 1, :])  # just the 1st column
+freq = imag(s) ./ (2pi)
+
+Np = 50  # order of fitting
+init_poles = recommended_init_poles(s, Np)
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles)
+@show error_norm</code></pre><p>Now we plot the result. Blue lines are the response being fitted, orange lines are the fitted values and green lines are the deviations.</p><pre><code class="language-julia hljs">p1 = plot(
+    freq,
+    abs.(f),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    yaxis = :log,
+    legend = false,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f - fitted), label = &quot;deviation&quot;, linecolor = :green)
+savefig(p1, &quot;ex4-1.svg&quot;)</code></pre><p><img src="ex4-1.svg" alt="ex4-1"/></p><p>That does not look very good. What if we try with a weighting <span>$w(s)$</span>?</p><p class="math-container">\[w(s) = \frac{1}{\sqrt{|f(s)|}}\]</p><pre><code class="language-julia hljs">weight = @. 1.0 / sqrt(abs(f))
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles, weight)
+@show error_norm
+
+p1 = plot(
+    freq,
+    abs.(f),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    yaxis = :log,
+    legend = false,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f - fitted), label = &quot;deviation&quot;, linecolor = :green)</code></pre><p><img src="ex4-2.svg" alt="ex4-2"/></p><p>Damn, it got worse :(</p><p>What if we disable the relaxed non-triviality constraint?</p><pre><code class="language-julia hljs">weight = @. 1.0 / sqrt(abs(f))
+poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles, weight; relaxed = false)
+@show error_norm
+
+p1 = plot(
+    freq,
+    abs.(f),
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Magnitude&quot;,
+    yaxis = :log,
+    legend = false,
+)
+plot!(freq, abs.(fitted), label = &quot;fitted&quot;, linecolor = :darkorange)
+plot!(freq, abs.(f - fitted), label = &quot;deviation&quot;, linecolor = :green)</code></pre><p><img src="ex4-3.svg" alt="ex4-3"/></p><p>In some frequency ranges the fitting got better, but worse in others when compared to the first figure.</p><p>Finally, let&#39;s plot the phase angle using a helper function from the package <a href="https://docs.juliadsp.org/stable/contents/">DSP.jl</a></p><pre><code class="language-julia hljs">import DSP
+
+f_phase = rad2deg.(DSP.unwrap(angle.(f), dims=1))
+p1 = plot(
+    freq,
+    f_phase,
+    label = &quot;f(s)&quot;,
+    linecolor = :blue,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    ylabel = &quot;Phase angle [deg]&quot;,
+    legend = false,
+)
+fitted_phase = rad2deg.(DSP.unwrap(angle.(fitted), dims=1))
+plot!(freq, fitted_phase, label = &quot;fitted&quot;, linecolor = :darkorange)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">error_norm = 0.01554216852819071
+error_norm = 0.06683990463126742
+error_norm = 0.023247057328119547</code></pre><p><img src="ex4-4.svg" alt="ex4-4"/></p><hr/><p>Unfortunately, the Vector Fitting algorithm relies a lot on trial and error of the user. The fitting could be better if a higher order was used, but that has a tendency to lead to numerically unstable state-space models. Hence, we try to do a low order fitting first.</p><p>There are efforts in the literature to make the algorithm more automatic (which some day may be incorporated into this package), see [4].</p><h2 id="Bibliography"><a class="docs-heading-anchor" href="#Bibliography">Bibliography</a><a id="Bibliography-1"></a><a class="docs-heading-anchor-permalink" href="#Bibliography" title="Permalink"></a></h2><p>[1] B. Gustavsen and A. Semlyen, &quot;Rational approximation of frequency domain responses by vector fitting,&quot; in IEEE Transactions on Power Delivery, vol. 14, no. 3, pp. 1052-1061, July 1999, <a href="https://doi.org/10.1109/61.772353">doi: 10.1109/61.772353</a>.</p><p>[2] B. Gustavsen, &quot;Improving the pole relocating properties of vector fitting,&quot; in IEEE Transactions on Power Delivery, vol. 21, no. 3, pp. 1587-1592, July 2006, <a href="https://doi.org/10.1109/TPWRD.2005.860281">doi: 10.1109/TPWRD.2005.860281</a>.</p><p>[3] D. Deschrijver, M. Mrozowski, T. Dhaene and D. De Zutter, &quot;Macromodeling of Multiport Systems Using a Fast Implementation of the Vector Fitting Method,&quot; in IEEE Microwave and Wireless Components Letters, vol. 18, no. 6, pp. 383-385, June 2008, <a href="https://doi.org/10.1109/LMWC.2008.922585">doi: 10.1109/LMWC.2008.922585</a>.</p><p>[4] A. M. Smith, S. D&#39;Arco, J. A. Suul and B. Gustavsen, &quot;Improved Pole Placement and Compaction of MIMO Vector Fitting Applied to System Identification,&quot; in IEEE Transactions on Power Delivery, vol. 39, no. 2, pp. 1259-1270, April 2024, <a href="https://doi.org/10.1109/TPWRD.2024.3364836">doi: 10.1109/TPWRD.2024.3364836.</a></p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="90-contributing/">Contributing guidelines »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Tuesday 8 October 2024 21:27">Tuesday 8 October 2024</span>. Using Julia version 1.11.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
