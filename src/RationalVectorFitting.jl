@@ -5,20 +5,47 @@ export rational,
 
 using LinearAlgebra
 
+
 """
     cplxpair(x)
 
-To be used to sort an array by real, then complex conjugate pairs.
+To be used to sort an array by real values, then complex conjugate pairs.
+The more positive reals will be first, then the pairs with smaller imaginary part.
+
+# Example
+```julia
+real_values = [-1, -3, -2]
+complex_values = [-1 + 1im, -2 - 2im, -1 + 2im]
+sorted_values = sort!([complex_values; conj(complex_values); real_values], by = cplxpair)
+
+# output
+
+9-element Vector{Complex{Int64}}:
+ -1 + 0im
+ -2 + 0im
+ -3 + 0im
+ -1 - 1im
+ -1 + 1im
+ -1 - 2im
+ -1 + 2im
+ -2 - 2im
+ -2 + 2im
+```
 """
 function cplxpair(x)
-    return (isreal(x), abs(imag(x)), real(x), imag(x))
+    return (!isreal(x), abs(imag(x)), abs(real(x)), imag(x))
 end
 
 
-"""
+@doc raw"""
     rational(s, poles, residues, d, h)
 
-Rational transfer function.
+Rational transfer function with complex frequencies `s`, a set of poles `a_n`,
+residues `r_n` and real constants `d` and `h`.
+
+```math
+\sum_{n=1}^N \frac{r_n}{s - a_n} + d + s h
+```
 """
 function rational(s, poles, residues, d, h)
     return [sum(residues ./ (sk .- poles)) + d + sk * h for sk in s]
@@ -28,7 +55,7 @@ end
 """
     recommended_init_poles(s, Npairs)
 
-Builds a vector of recommended initial poles sorted by cplxpair.
+Builds a vector of recommended initial poles sorted by [`cplxpair`](@ref).
 """
 function recommended_init_poles(s, Npairs)
     s0 = imag(s[1])
@@ -45,8 +72,8 @@ end
 """
     build_Abase!(A1, s, poles)
 
-Builds the submatrix with the `1 / (s - p)`, `1.0` and `s` coefficients.
-It is assumed that the poles are sorted by cplxpair.
+Builds the base matrix with the `1 / (s - p)`, `1.0` and `s` coefficients.
+It is assumed that the poles were sorted by [`cplxpair`](@ref).
 """
 @inline function build_Abase!(A1, s, poles)
     Ns = length(s)
@@ -74,6 +101,8 @@ end
     pole_identification(s, f, poles, weight, relaxed)
 
 Stage 1 of the Vector Fitting.
+
+See also [`vector_fitting`](@ref), [`residue_identification`](@ref).
 """
 function pole_identification(s, f, poles, weight, relaxed)
     Ns = length(s)
@@ -165,7 +194,9 @@ end
     residue_identification(s, f, poles, weight)
 
 Stage 2 of the Vector Fitting. This should be called separately for each column
-of `f` and `weight`.
+of `f` and `weight` when `ndims(f) == 2`.
+
+See also [`vector_fitting`](@ref), [`pole_identification`](@ref).
 """
 function residue_identification(s, f, poles, weight)
     Ns = length(s)
@@ -204,7 +235,6 @@ function residue_identification(s, f, poles, weight)
 end
 
 
-
 """
     vector_fitting(
     s,
@@ -217,13 +247,13 @@ end
     tol = 1e-12,
 )
 
-Fast Relaxed Vector Fitting of the array `f` with complex frequency `s`
+Vector Fitting of the array `f` with complex frequency `s`
 using a set of initial poles `init_poles`.
 
 `f` can be a matrix of dimensions `(Ns, Nc)` and the fitting will be over
-its columns with a set of common poles.
-c
-`relaxed` controls the nontriviality constraint. See [2].
+its columns using a set of common poles.
+
+`relaxed` controls the nontriviality constraint. See reference [2].
 
 `force_stable` controls if unstable poles should be reflected to the semi-left
 complex plane.
@@ -231,8 +261,29 @@ complex plane.
 `maxiter` is the maximum of iterations that will be done to try to achieve a
 convergence with desired tolerance `tol`.
 
-References
-----------
+See also [`recommended_init_poles`](@ref), [`rational`](@ref),
+[`pole_identification`](@ref), [`residue_identification`](@ref).
+
+# Examples
+
+```julia
+using RationalVectorFitting, Plots
+begin
+    freq = exp10.(range(0, 4, length = 101))
+    s = 2im * pi * freq
+    f = rational(s, [-5.0, -100 - 500im, -100 + 500im], [2.0, 30 - 40im, 30 + 40im], 0.5, 0.0)
+    init_poles = -2pi * exp10.(range(0, 4, length = 3))
+    poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles)
+    p1 = plot(freq, abs.(f), label = "f(s)", xaxis = :log, yaxis = :log, legend = :right, xlabel = "Frequency [Hz]", ylabel = "Magnitude")
+    plot!(freq, abs.(fitted), label = "fitted(s)", linecolor = :darkorange, linestyle = :dash)
+    plot!(freq, abs.(f .- fitted), label = "deviation", linecolor = :green)
+    display(p1)
+end
+```
+
+---
+
+# References
 
 [1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency domain
 responses by vector fitting," in IEEE Transactions on Power Delivery, vol. 14,
