@@ -9,5 +9,8 @@
     },
     "MD033": false,
     "MD041": false,
-    "default": true
+    "default": true,
+    "no-duplicate-heading": {
+        "siblings_only": true
+    }
 }
