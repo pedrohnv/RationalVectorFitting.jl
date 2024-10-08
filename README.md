@@ -55,6 +55,7 @@ end
 [![DOI](https://zenodo.org/badge/DOI/FIXME)](https://doi.org/FIXME)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![All Contributors](https://img.shields.io/github/all-contributors/pedrohnv/RationalVectorFitting.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
+[![BestieTemplate](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JuliaBesties/BestieTemplate.jl/main/docs/src/assets/badge.json)](https://github.com/JuliaBesties/BestieTemplate.jl)
 
 ## How to Cite
 

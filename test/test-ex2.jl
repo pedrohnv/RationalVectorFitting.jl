@@ -64,7 +64,35 @@
         [real_poles; complex_poles; conj(complex_poles)],
         by = RationalVectorFitting.cplxpair,
     )
+
+    # No weighting
     poles, residues, d, h, fitted, error_norm =
-        RationalVectorFitting.vector_fitting(s, f, init_poles)
+        RationalVectorFitting.vector_fitting(s, f, init_poles; maxiter = 3, relaxed = false)
+    @test error_norm < 1e-10
+
+    poles, residues, d, h, fitted, error_norm =
+        RationalVectorFitting.vector_fitting(s, f, init_poles; maxiter = 3, relaxed = true)
+    @test error_norm < 1e-10
+
+    # With weighting
+    weight = @. 1.0 / sqrt(abs(f))
+    poles, residues, d, h, fitted, error_norm = RationalVectorFitting.vector_fitting(
+        s,
+        f,
+        init_poles,
+        weight;
+        maxiter = 3,
+        relaxed = false,
+    )
+    @test error_norm < 1e-10
+
+    poles, residues, d, h, fitted, error_norm = RationalVectorFitting.vector_fitting(
+        s,
+        f,
+        init_poles,
+        weight;
+        maxiter = 3,
+        relaxed = true,
+    )
     @test error_norm < 1e-10
 end
