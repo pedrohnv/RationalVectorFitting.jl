@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-10-08
+
 ### Added
 
 - weighting to the least-square problem, so that some ranges have a "priority" to fit.
+- Examples 1-4 to the docs
+
+### Fixed
+
+- minimum Julia version is v1.10
 
 ## [0.1.1] - 2024-10-07
 
