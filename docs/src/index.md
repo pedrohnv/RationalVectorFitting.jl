@@ -16,7 +16,7 @@ The transfer function can be a vector $f(s) = [y_1, \dots, y_m]$ and the Vector 
 
 A rational representation of a transfer function makes it easier to find a [state space canonical realization](https://en.wikipedia.org/wiki/Realization_(systems)#Canonical_realizations) of a system and to [perform convolutions](https://doi.org/10.4236/jamp.2022.106144).
 
-## Usage Examples
+## Examples
 
 ### Example 1
 
