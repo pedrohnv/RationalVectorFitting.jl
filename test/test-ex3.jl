@@ -1,5 +1,5 @@
 @testset "ex3" begin
-    fid1 = split.(readlines("test/03PK10.txt"))
+    fid1 = split.(readlines("03PK10.txt"))
     f = zeros(ComplexF64, 160)
     for k = 1:160
         A1 = parse(Float64, fid1[k+1][1])

@@ -43,12 +43,12 @@ end
 
 
 """
-    build_subA!(A1, s, poles)
+    build_Abase!(A1, s, poles)
 
 Builds the submatrix with the `1 / (s - p)`, `1.0` and `s` coefficients.
 It is assumed that the poles are sorted by cplxpair.
 """
-@inline function build_subA!(A1, s, poles)
+@inline function build_Abase!(A1, s, poles)
     Ns = length(s)
     Np = length(poles)
     skip_next = false
@@ -80,7 +80,6 @@ function pole_identification(s, f, poles, weight, relaxed)
     Np = length(poles)
     Nres = Np + relaxed
     Ncols = Np + 2 + Nres
-    A1_cplx = zeros(ComplexF64, Ns, Ncols)
     Nrows = 2 * Ns + relaxed
     A1_reim = zeros(Nrows, Ncols)
     Nc = (ndims(f) == 1) ? 1 : size(f)[2]
@@ -89,10 +88,16 @@ function pole_identification(s, f, poles, weight, relaxed)
     x_sys = view(b_sys, 1:Nres)
     scale = sqrt(sum([norm(weight[1:Ns, n] .* f[1:Ns, n])^2 for n = 1:Nc]))
     scale_Ns = scale / Ns
-    build_subA!(A1_cplx, s, poles)  # left block
+    A1_base = zeros(ComplexF64, Ns, (Np + 2))
+    build_Abase!(A1_base, s, poles)  # left block
+    A1_cplx = zeros(ComplexF64, Ns, Ncols)  # right block
     for n = 1:Nc
-        A1_cplx[1:Ns, 1:Ncols] .*= weight[1:Ns, n]
-        A1_cplx[1:Ns, (Np+3):Ncols] .= -f[1:Ns, n] .* A1_cplx[1:Ns, 1:Nres]  # right block
+        for i = 1:(Np+2)
+            A1_cplx[1:Ns, i] .= A1_base[1:Ns, i] .* weight[1:Ns, n]
+        end
+        for i = 1:Nres
+            A1_cplx[1:Ns, (Np+2+i)] .= A1_cplx[1:Ns, i] .* (-f[1:Ns, n])
+        end
         A1_reim[1:Ns, :] .= real(A1_cplx)
         A1_reim[(Ns+1):(2Ns), :] .= imag(A1_cplx)
         if relaxed && n == Nc
@@ -124,10 +129,10 @@ function pole_identification(s, f, poles, weight, relaxed)
     if relaxed
         sig_d = abs(x_sys[end])
         if sig_d < 1e-8
-            x_sys[end] = 1e-8 #* x_sys[end] / sig_d
+            x_sys[end] = 1e-8 * x_sys[end] / sig_d
             @warn "`d` of sigma too small. Consider stopping execution and setting `relaxed=false`. Resuming..."
         elseif sig_d > 1e8
-            x_sys[end] = 1e8 #* x_sys[end] / sig_d
+            x_sys[end] = 1e8 * x_sys[end] / sig_d
             @warn "`d` of sigma too big. Consider stopping execution and setting `relaxed=false`. Resuming..."
         end
         x_sys[1:(end-1)] ./= x_sys[end]  # scale sigma's residues by its `d`
@@ -169,7 +174,7 @@ function residue_identification(s, f, poles, weight)
     Nrows = 2 * Ns
     Ncols = Np + 2
     A1_cplx = zeros(ComplexF64, Ns, Ncols)
-    build_subA!(A1_cplx, s, poles)
+    build_Abase!(A1_cplx, s, poles)
     A1_cplx .*= weight
     A_sys = [real(A1_cplx); imag(A1_cplx)]
     norm_cols = [norm(A_sys[:, n]) for n = 1:Ncols]

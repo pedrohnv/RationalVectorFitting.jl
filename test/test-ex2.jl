@@ -95,22 +95,4 @@
         relaxed = true,
     )
     @test error_norm < 1e-10
-
-
-
-
-    freq = imag(s) / 2pi
-    p1 = plot(
-        freq,
-        abs.(f),
-        label = "f(s)",
-        linecolor = :blue,
-        xlabel = "Frequency [Hz]",
-        #xaxis = :log,
-        yaxis = :log,
-        legend = false,
-    )
-    plot!(freq, abs.(fitted), label = "fitted(s)", linecolor = :darkorange)
-    plot!(freq, abs.(f - fitted), label = "deviation", linecolor = :green)
-    display(p1)
 end

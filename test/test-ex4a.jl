@@ -1,6 +1,6 @@
 @testset "ex4a" begin
     local s, bigY
-    open("test/fdne.txt", "r") do fid1
+    open("fdne.txt", "r") do fid1
         Nc = parse(Int, readline(fid1))
         Ns = parse(Int, readline(fid1))
         s = Array{ComplexF64}(undef, Ns)
@@ -18,7 +18,7 @@
     end
     f = transpose(bigY[:, 1, :])
     Ns, Nc = size(f)
-    Np = 100  # FIXME 50 should be enough, but is giving a bad fit...
+    Np = 50
     init_poles = RationalVectorFitting.recommended_init_poles(s, Np)
     weight = @. 1.0 / sqrt(abs(f))
 
@@ -27,9 +27,8 @@
         f,
         init_poles,
         weight;
-        maxiter = 6,
+        maxiter = 3,
         relaxed = false,
-        tol = 0.1,
     )
 
     init_poles = poles
@@ -38,10 +37,8 @@
         f,
         init_poles,
         weight;
-        maxiter = 6,
+        maxiter = 2,
         relaxed = true,
-        tol = 0.1,
     )
-
     @test error_norm < 1e-1
 end
