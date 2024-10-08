@@ -1,7 +1,11 @@
 module RationalVectorFitting
 
 export rational,
-    recommended_init_poles, pole_identification, residue_identification, vector_fitting
+    cplxpair,
+    recommended_init_poles,
+    pole_identification,
+    residue_identification,
+    vector_fitting
 
 using LinearAlgebra
 
