@@ -7,6 +7,7 @@ export rational,
     residue_identification,
     vector_fitting
 
+
 using LinearAlgebra
 
 
@@ -42,7 +43,7 @@ end
 
 
 @doc raw"""
-    rational(s, poles, residues, d, h)
+    rational(s, poles, residues, d, h) -> `f(s)`
 
 Rational transfer function with complex frequencies `s`, a set of poles `a_n`,
 residues `r_n` and real constants `d` and `h`.
@@ -57,7 +58,7 @@ end
 
 
 """
-    recommended_init_poles(s, Npairs)
+    recommended_init_poles(s, Npairs) -> init_poles
 
 Builds a vector of recommended initial poles sorted by [`cplxpair`](@ref).
 """
@@ -102,7 +103,7 @@ end
 
 
 """
-    pole_identification(s, f, poles, weight, relaxed)
+    pole_identification(s, f, poles, weight, relaxed) -> new_poles
 
 Stage 1 of the Vector Fitting.
 
@@ -195,7 +196,7 @@ end
 
 
 """
-    residue_identification(s, f, poles, weight)
+    residue_identification(s, f, poles, weight) -> residues, d, h
 
 Stage 2 of the Vector Fitting. This should be called separately for each column
 of `f` and `weight` when `ndims(f) == 2`.
@@ -241,15 +242,15 @@ end
 
 """
     vector_fitting(
-    s,
-    f,
-    init_poles,
-    weight = 1;
-    relaxed = true,
-    force_stable = true,
-    maxiter = 5,
-    tol = 1e-12,
-)
+        s,
+        f,
+        init_poles,
+        weight = 1;
+        relaxed = true,
+        force_stable = true,
+        maxiter = 5,
+        tol = 1e-12,
+    ) -> poles, residues, d, h, fitted, error_norm
 
 Vector Fitting of the array `f` with complex frequency `s`
 using a set of initial poles `init_poles`.
@@ -257,50 +258,17 @@ using a set of initial poles `init_poles`.
 `f` can be a matrix of dimensions `(Ns, Nc)` and the fitting will be over
 its columns using a set of common poles.
 
-`relaxed` controls the nontriviality constraint. See reference [2].
+`relaxed` controls the nontriviality constraint. `relaxed=true` usually
+converges faster, but can be less stable for non-smooth functions.
 
 `force_stable` controls if unstable poles should be reflected to the semi-left
-complex plane.
+complex plane, that is, forced to have negative real part.
 
 `maxiter` is the maximum of iterations that will be done to try to achieve a
-convergence with desired tolerance `tol`.
+convergence with desired `error_norm` tolerance `tol`.
 
 See also [`recommended_init_poles`](@ref), [`rational`](@ref),
 [`pole_identification`](@ref), [`residue_identification`](@ref).
-
-# Examples
-
-```julia
-using RationalVectorFitting, Plots
-begin
-    freq = exp10.(range(0, 4, length = 101))
-    s = 2im * pi * freq
-    f = rational(s, [-5.0, -100 - 500im, -100 + 500im], [2.0, 30 - 40im, 30 + 40im], 0.5, 0.0)
-    init_poles = -2pi * exp10.(range(0, 4, length = 3))
-    poles, residues, d, h, fitted, error_norm = vector_fitting(s, f, init_poles)
-    p1 = plot(freq, abs.(f), label = "f(s)", xaxis = :log, yaxis = :log, legend = :right, xlabel = "Frequency [Hz]", ylabel = "Magnitude")
-    plot!(freq, abs.(fitted), label = "fitted(s)", linecolor = :darkorange, linestyle = :dash)
-    plot!(freq, abs.(f .- fitted), label = "deviation", linecolor = :green)
-    display(p1)
-end
-```
-
----
-
-# References
-
-[1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency domain
-responses by vector fitting," in IEEE Transactions on Power Delivery, vol. 14,
-no. 3, pp. 1052-1061, July 1999, doi: 10.1109/61.772353.
-
-[2] B. Gustavsen, "Improving the pole relocating properties of vector fitting,"
-in IEEE Transactions on Power Delivery, vol. 21, no. 3, pp. 1587-1592,
-July 2006, doi: 10.1109/TPWRD.2005.860281.
-
-[3] D. Deschrijver, M. Mrozowski, T. Dhaene and D. De Zutter, "Macromodeling of
-Multiport Systems Using a Fast Implementation of the Vector Fitting Method,"
-in IEEE Microwave and Wireless Components Letters, vol. 18, no. 6, pp. 383-385,
-June 2008, doi: 10.1109/LMWC.2008.922585
 """
 function vector_fitting(
     s,
