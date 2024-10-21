@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - variable `Npairs` to `Npoles` in `recommended_init_poles`
+- InexactError if `f` or `poles` were `Float`
 
 ## [0.2.0] - 2024-10-08
 
