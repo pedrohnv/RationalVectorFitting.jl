@@ -206,7 +206,7 @@ See also [`vector_fitting`](@ref), [`pole_identification`](@ref).
 function residue_identification(s, f, poles, weight)
     Ns = length(s)
     Np = length(poles)
-    residues = similar(poles)
+    residues = similar(poles, ComplexF64)
     Nrows = 2 * Ns
     Ncols = Np + 2
     A1_cplx = zeros(ComplexF64, Ns, Ncols)
@@ -316,7 +316,7 @@ function vector_fitting(
     residues = zeros(ComplexF64, Np, Nc)
     d = zeros(Nc)
     h = zeros(Nc)
-    fitted = similar(f)
+    fitted = similar(f, ComplexF64)
     local error_norm = Inf
     for iter = 1:maxiter
         if error_norm < tol
