@@ -58,17 +58,17 @@ end
 
 
 """
-    recommended_init_poles(s, Npairs) -> init_poles
+    recommended_init_poles(s, Npoles) -> init_poles
 
 Builds a vector of recommended initial poles sorted by [`cplxpair`](@ref).
 """
-function recommended_init_poles(s, Npairs)
+function recommended_init_poles(s, Npoles)
     s0 = imag(s[1])
     if isapprox(s0, 0.0)
         s0 = imag(s[2])
     end
     s1 = imag(s[end])
-    init_poles = [(-0.01 + 1.0im) * sk for sk in range(s0, s1, length = Npairs ÷ 2)]
+    init_poles = [(-0.01 + 1.0im) * sk for sk in range(s0, s1, length = Npoles ÷ 2)]
     init_poles = sort!([init_poles; conj.(init_poles)], by = cplxpair)
     return init_poles
 end

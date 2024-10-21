@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- variable `Npairs` to `Npoles` in `recommended_init_poles`
+
 ## [0.2.0] - 2024-10-08
 
 ### Added
