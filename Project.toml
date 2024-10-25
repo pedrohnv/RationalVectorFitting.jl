@@ -1,7 +1,7 @@
 name = "RationalVectorFitting"
 uuid = "52b1e31a-230f-50d6-be04-0f5494ddfff6"
 authors = ["Pedro H. N. Vieira <phnvieira@proton.me>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
