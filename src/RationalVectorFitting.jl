@@ -83,18 +83,16 @@ It is assumed that the poles were sorted by [`cplxpair`](@ref).
 @inline function build_Abase!(A1, s, poles)
     Ns = length(s)
     Np = length(poles)
-    skip_next = false
-    for (i, p) in enumerate(poles)
-        if skip_next
-            skip_next = false
-            continue
-        elseif isreal(p)
-            skip_next = false
+    i = 1
+    while i <= Np
+        p = poles[i]
+        if isreal(p)
             A1[1:Ns, i] .= 1.0 ./ (s .- p)
+            i += 1
         else
-            skip_next = true
             A1[1:Ns, i] .= 1.0 ./ (s .- p) + 1.0 ./ (s .- conj(p))
             A1[1:Ns, i+1] .= 1.0im ./ (s .- p) - 1.0im ./ (s .- conj(p))
+            i += 2
         end
     end
     A1[1:Ns, Np+1] .= 1.0
@@ -172,23 +170,21 @@ function pole_identification(s, f, poles, weight, relaxed)
         x_sys[1:(end-1)] ./= x_sys[end]  # scale sigma's residues by its `d`
     end
     H = zeros(Np, Np)
-    skip_next = false
-    for (i, p) in enumerate(poles)
-        if skip_next
-            skip_next = false
-            continue
-        elseif isreal(p)
-            skip_next = false
+    i = 1
+    while i <= Np
+        p = poles[i]
+        if isreal(p)
             H[:, i] .= -x_sys[i]
             H[i, i] += p
+            i += 1
         else
-            skip_next = true
             H[1:2:end, i] .= -2.0 * x_sys[i]
             H[i, i] += real(p)
             H[i+1, i] += -imag(p)
             H[1:2:end, i+1] .= -2.0 * x_sys[i+1]
             H[i, i+1] += imag(p)
             H[i+1, i+1] += real(p)
+            i += 2
         end
     end
     return eigvals(H)
@@ -220,18 +216,15 @@ function residue_identification(s, f, poles, weight)
     B_cplx = f .* weight
     X_sys = A_sys \ [real(B_cplx); imag(B_cplx)]
     X_sys ./= norm_cols
-    skip_next = false
-    for (i, p) in enumerate(poles)
-        if skip_next
-            skip_next = false
-            continue
-        elseif isreal(p)
-            skip_next = false
+    i = 1
+    while i <= Np
+        if isreal(poles[i])
             residues[i] = X_sys[i]
+            i += 1
         else
-            skip_next = true
             residues[i] = complex(X_sys[i], X_sys[i+1])
             residues[i+1] = conj(residues[i])
+            i += 2
         end
     end
     d = X_sys[Np+1]
