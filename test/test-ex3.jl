@@ -1,3 +1,4 @@
+# Uses one of the MATLAB examples as a test.
 @testset "ex3" begin
     fid1 = split.(readlines("03PK10.txt"))
     f = zeros(ComplexF64, 160)

@@ -1,3 +1,4 @@
+# Uses one of the MATLAB examples as a test.
 @testset "ex1" begin
     Ns = 101
     s = 2im * pi * exp10.(range(0, 4, length = Ns))

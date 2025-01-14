@@ -1,3 +1,4 @@
+# Uses one of the MATLAB examples as a test.
 @testset "ex2" begin
     poles0 =
         2π .* [

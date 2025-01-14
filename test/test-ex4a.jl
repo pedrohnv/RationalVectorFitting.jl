@@ -1,3 +1,4 @@
+# Uses one of the MATLAB examples as a test.
 @testset "ex4a" begin
     local s, bigY
     open("fdne.txt", "r") do fid1

@@ -5,7 +5,8 @@ export rational,
     recommended_init_poles,
     pole_identification,
     residue_identification,
-    vector_fitting
+    vector_fitting,
+    symmetric_matrix_fitting
 
 
 using LinearAlgebra
@@ -251,7 +252,10 @@ using a set of initial poles `init_poles`.
 `f` can be a matrix of dimensions `(Ns, Nc)` and the fitting will be over
 its columns using a set of common poles.
 
-`relaxed` controls the nontriviality constraint. `relaxed=true` usually
+`weight` can be a scalar or an array with the same dimensions as `f`. It is
+used to help achieve a better fitting at some frequencies.
+
+`relaxed` controls the nontriviality constraint. `relaxed = true` usually
 converges faster, but can be less stable for non-smooth functions.
 
 `force_stable` controls if unstable poles should be reflected to the semi-left
@@ -261,7 +265,8 @@ complex plane, that is, forced to have negative real part.
 convergence with desired `error_norm` tolerance `tol`.
 
 See also [`recommended_init_poles`](@ref), [`rational`](@ref),
-[`pole_identification`](@ref), [`residue_identification`](@ref).
+[`pole_identification`](@ref), [`residue_identification`](@ref),
+[`symmetric_matrix_fitting`](@ref).
 """
 function vector_fitting(
     s,
@@ -340,5 +345,120 @@ function vector_fitting(
     end
     return poles, residues, d, h, fitted, error_norm
 end
+
+
+"""
+    symmetric_matrix_fitting(
+        s,
+        f,
+        init_poles,
+        weight = 1;
+        relaxed = true,
+        force_stable = true,
+        maxiter = 5,
+        tol = 1e-12,
+    ) -> poles, residues, d, h, fitted, error_norm
+
+Vector Fitting of the symmetric matrix `f` of size `(Nc, Nc, Ns)`
+with complex frequency `s` using a set of initial poles `init_poles`.
+
+`weight` can be a scalar or an array with the same dimensions as `f`. It is
+used to help achieve a better fitting at some frequencies.
+
+`relaxed` controls the nontriviality constraint. `relaxed=true` usually
+converges faster, but can be less stable for non-smooth functions.
+
+`force_stable` controls if unstable poles should be reflected to the semi-left
+complex plane, that is, forced to have negative real part.
+
+`maxiter` is the maximum of iterations that will be done to try to achieve a
+convergence with desired `error_norm` tolerance `tol`.
+
+See also [`recommended_init_poles`](@ref), [`rational`](@ref),
+[`pole_identification`](@ref), [`residue_identification`](@ref),
+[`vector_fitting`](@ref).
+"""
+function symmetric_matrix_fitting(
+    s,
+    f,
+    init_poles,
+    weight = 1;
+    relaxed = true,
+    force_stable = true,
+    maxiter = 5,
+    tol = 1e-12,
+)
+    # flatten the upper triangle of the matrix and stack them as a vector
+    Nc, n1, Ns = size(f)
+    if n1 != Nc
+        throw(error("`f` must be a square matrix."))
+    end
+
+    nv = Int(Nc * (Nc + 1) / 2)
+    flattened = zeros(ComplexF64, Ns, nv)
+    let i = 1
+        for i2 = 1:Nc
+            for i1 = i2:Nc
+                flattened[:, i] .= f[i1, i2, :]
+                i += 1
+            end
+        end
+    end
+
+    if typeof(weight) <: Number
+        weight_flat = fill(weight, size(flattened))
+    elseif size(weight) != size(f)
+        throw(
+            error(
+                "It is expected `weight` to be a scalar or to have the same dimensions as f.",
+            ),
+        )
+    else
+        weight_flat = similar(flattened)
+        let i = 1
+            for i2 = 1:Nc
+                for i1 = i2:Nc
+                    weight_flat[:, i] .= weight[i1, i2, :]
+                    i += 1
+                end
+            end
+        end
+    end
+
+    poles, residues, d, e, fitted, error_norm = vector_fitting(
+        s,
+        flattened,
+        init_poles,
+        weight_flat;
+        relaxed = relaxed,
+        force_stable = force_stable,
+        maxiter = maxiter,
+        tol = tol,
+    )
+
+    # recover the matrix shape
+    Np = length(poles)
+    rm = zeros(ComplexF64, Nc, Nc, Np)  # residues
+    dm = zeros(Nc, Nc)  # D
+    em = zeros(Nc, Nc)  # E
+    fm = zeros(ComplexF64, Nc, Nc, Ns)  # F(s)
+    let nr = 1
+        for k = 1:Nc
+            for i = k:Nc
+                rm[i, k, :] .= residues[:, nr]
+                rm[k, i, :] .= rm[i, k, :]
+                dm[i, k] = d[nr]
+                dm[k, i] = d[nr]
+                em[i, k] = e[nr]
+                em[k, i] = e[nr]
+                fm[i, k, :] .= fitted[:, nr]
+                fm[k, i, :] .= fm[i, k, :]
+                nr += 1
+            end
+        end
+    end
+    return poles, rm, dm, em, fm, error_norm
+end
+
 
 end  # module
