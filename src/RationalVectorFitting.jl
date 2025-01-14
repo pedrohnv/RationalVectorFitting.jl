@@ -319,11 +319,6 @@ function vector_fitting(
     fitted = similar(f, ComplexF64)
     local error_norm = Inf
     for iter = 1:maxiter
-        if error_norm < tol
-            println("convergence achieved at iter. = $(iter)")
-            println("error_norm = $(error_norm)")
-            break
-        end
         poles = pole_identification(s, f, poles, weight, relaxed)
         if force_stable
             for (i, p) in enumerate(poles)
@@ -339,6 +334,11 @@ function vector_fitting(
             fitted[:, n] .= rational(s, poles, residues[:, n], d[n], h[n])
         end
         error_norm = norm(f .- fitted, 2)
+        if error_norm < tol
+            println("convergence achieved at iter. = $(iter)")
+            println("error_norm = $(error_norm)")
+            break
+        end
     end
     perm = sortperm(poles, by = cplxpair)
     poles = poles[perm]
