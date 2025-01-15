@@ -1,15 +1,20 @@
 module RationalVectorFitting
 
+include("TimeDomainVF.jl")
+
+using .TimeDomainVF
+using LinearAlgebra
+
 export rational,
     cplxpair,
     recommended_init_poles,
     pole_identification,
     residue_identification,
     vector_fitting,
-    symmetric_matrix_fitting
-
-
-using LinearAlgebra
+    symmetric_matrix_fitting,
+    convolution,
+    rational_to_state_space,
+    simulate_state_space
 
 
 """

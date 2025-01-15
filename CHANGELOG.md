@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - function to fit a symmetric matrix `symmetric_matrix_fitting`
+- functions to convert to time-domain state space model and simulate it
 
 ## [0.2.1]
 

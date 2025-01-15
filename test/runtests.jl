@@ -1,5 +1,6 @@
-using RationalVectorFitting
 using Test
+using RationalVectorFitting
+using LinearAlgebra
 
 
 #=
