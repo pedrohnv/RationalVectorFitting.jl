@@ -14,6 +14,7 @@ export rational,
     symmetric_matrix_fitting,
     convolution,
     rational_to_state_space,
+    symmetric_rational_to_state_space,
     simulate_state_space
 
 

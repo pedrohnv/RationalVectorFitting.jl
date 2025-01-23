@@ -11,26 +11,28 @@ module TimeDomainVF
 
 using LinearAlgebra
 
-export convolution, rational_to_state_space, simulate_state_space
+export convolution,
+    rational_to_state_space, symmetric_rational_to_state_space, simulate_state_space
 
 
 @doc raw"""
     rational_to_state_space(poles, residues; real_only=true, reduced=false) -> A, B, C
 
-Converts a pole-residue rational model into a time-domain state-space representation
-in canonical Jordan form.
+Converts a pole-residue rational model into a time-domain impulsive state-space
+representation in canonical Jordan form.
 
 ### Arguments
-- `poles`: Vector of poles of the rational model.
-- `residues`: Vector of residues corresponding to the poles.
+- `poles`: Vector containing the `np` set of common poles of the rational model.
+- `residues`: Vector (size `(np,)`) or Matrix (size `(nc, np)`) of residues corresponding to the poles.
 - `real_only` (default = `true`):
-    If `true`, returns a real-valued state-space system by pairing complex-conjugate poles.
-    If `false`, allows the system to be complex.
+    If `true`, the function returns a real-valued state-space system by pairing complex-conjugate poles.
+    If `false`, the system may contain complex-valued matrices.
 - `reduced` (default = `false`):
-    If `true` reduces the size of the state-space model by:
+    If `true`, the function returns a reduced complex state-space model by:
     1. Discarding half of the conjugate poles.
     2. Doubling the real part of the corresponding residues.
-    3. The User discarding the imaginary part during any simulation using this model.
+    3. Users should discard the imaginary part during simulations when using this model.
+    **Note:** This option overrides the `real_only` parameter.
 
 ### Returns
 - `A`: State matrix.
@@ -38,23 +40,32 @@ in canonical Jordan form.
 - `C`: Output matrix.
 
 ### Mathematical Representation
-The resulting state-space system is represented as:
+The resulting impulsive state-space system is given by:
 
 ```math
     \frac{dx(t)}{dt} = A x(t) + B u(t)
 
     y(t) = C \dot x(t) + D \dot u(t) + E \dot \frac{du(t)}{dt}
 ```
+
+See also [`symmetric_rational_to_state_space`](@ref).
 """
 function rational_to_state_space(poles, residues; real_only = true, reduced = false)
+    # TODO maybe it would be better to use Sparse Arrays?
+    # TODO enforce passivity constraints?
     if ndims(residues) == 1
         nc = 1
         np = length(residues)
-    else
+    elseif ndims(residues) == 2
         nc, np = size(residues)
+    else
+        throw(error("It was expected that `residues` had ndims equal to 1 or 2."))
     end
     residues = reshape(residues, nc, np)
     if reduced
+        if real_only
+            @warn "`real_only` was ignored because `reduced` is true"
+        end
         idx = imag(poles) .>= 0.0
         halfpoles = poles[idx]
         np = length(halfpoles)
@@ -102,56 +113,164 @@ function rational_to_state_space(poles, residues; real_only = true, reduced = fa
             cm[:, i] .= residues[:, i]
         end
     end
-    # TODO passivity constraints
     return am, bm, cm
 end
 
 
-"""
-    simulate_state_space(A, B, C, D, input, x0, dt, nt; reduced = false)
+@doc raw"""
+    symmetric_rational_to_state_space(poles, residues; real_only=true, reduced=false) -> A, B, C
 
-Simulation of a state-space model using trapezoidal integration.
+Like [`rational_to_state_space`](@ref), converts a pole-residue rational model
+into a time-domain impulsive state-space representation in canonical Jordan form.
+
+### Arguments
+- `poles`: Vector containing the `np` set of common poles of the rational model.
+- `residues`: Symmetric matrix array of size `(nc, nc, np)` of the residues corresponding to the poles.
+- `real_only` (default = `true`):
+    If `true`, the function returns a real-valued state-space system by pairing complex-conjugate poles.
+    If `false`, the system may contain complex-valued matrices.
+- `reduced` (default = `false`):
+    If `true`, the function returns a reduced complex state-space model by:
+    1. Discarding half of the conjugate poles.
+    2. Doubling the real part of the corresponding residues.
+    3. Users should discard the imaginary part during simulations when using this model.
+    **Note:** This option overrides the `real_only` parameter.
+
+### Returns
+- `A`: State matrix.
+- `B`: Input matrix.
+- `C`: Output matrix.
+
+### Mathematical Representation
+The resulting impulsive state-space system is given by:
+
+```math
+    \frac{dx(t)}{dt} = A x(t) + B u(t)
+
+    y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
+```
+
+See also [`rational_to_state_space`](@ref).
+"""
+function symmetric_rational_to_state_space(
+    poles,
+    residues;
+    real_only = true,
+    reduced = false,
+)
+    npoles = length(poles)
+    nc1, nc2, npr = size(residues)
+    if npoles != npr
+        throw(error("`length(poles) != size(residues)[3]`"))
+    end
+    if nc1 != nc2 || !all([issymmetric(residues[:, :, i]) for i = 1:npoles])
+        throw(error("`residues[:, :, i]` is not symmetric"))
+    end
+    # flatten half of the system
+    nh = Int(nc1 * (nc1 + 1) / 2)
+    nc = Int((sqrt(1 + 8 * nh) - 1) / 2)
+    res = zeros(ComplexF64, (nh, npoles))
+    let nr = 1
+        for i = 1:nc
+            for k = i:nc
+                res[nr, :] .= residues[k, i, :]
+                nr += 1
+            end
+        end
+    end
+    av, bv, cv =
+        rational_to_state_space(poles, res; real_only = real_only, reduced = reduced)
+    # Recover the symmetric matrix characteristic of the system
+    np = size(cv)[2]
+    am = cat([av for i = 1:nc]..., dims = (1, 2))
+    bm = zeros(nc * np, nc)
+    cm = zeros(ComplexF64, nc, nc * np)
+    let nr = 1
+        for k = 1:nc
+            k1 = 1 + np * (k - 1)
+            k2 = k1 + np - 1
+            bm[k1:k2, k] .= bv
+            for i = k:nc
+                i1 = 1 + np * (i - 1)
+                i2 = i1 + np - 1
+                cm[i, k1:k2] .= cv[nr, :]
+                cm[k, i1:i2] .= cv[nr, :]
+                nr += 1
+            end
+        end
+    end
+    return am, bm, cm
+end
+
+
+@doc raw"""
+    simulate_state_space(A, B, C, D, E, input, x0, dt, nt)
+
+Simulation of an impulsive state-space model using trapezoidal integration.
+
+```math
+    \frac{dx(t)}{dt} = A x(t) + B u(t)
+
+    y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
+```
 
 ### Arguments
 - `A`: State matrix of size `(nx, nx)`.
 - `B`: Input matrix of size `(nx, n_in)`.
 - `C`: Output matrix of size `(n_out, nx)`.
 - `D`: Feedthrough of size `(n_out, n_in)`.
+- `E`: Impulsive term of size `(n_out, n_in)`.
 - `input`: input matrix of size `(nt, n_in)`.
-- `x0`: initial state vector of size `nx`.
 - `dt`: time step.
 - `nt`: number of time steps.
 
 ### Returns
 - `output`: output matrix of size `(nt, n_out)`.
 """
-function simulate_state_space(A, B, C, D, input, x0, dt, nt)
+function simulate_state_space(A, B, C, D, E, input, dt, nt)
     # TODO sanity check of the arguments
-    Ad = inv(I - dt / 2 * A) * (I + dt / 2 * A)
-    Bd = inv(I - dt / 2 * A) * (dt * B)
-    if ndims(D) == 0  # D is a scalar
-        n_out = n_in = 1
+    inv_I_A_dt_2 = inv(I - A * dt / 2)
+    Ar = inv_I_A_dt_2 * (I + A * dt / 2)
+    Br0 = inv_I_A_dt_2 * B * (dt / 2)
+    Br1 = Br0  # because trapezoidal integration
+    # Do a state-variable transformation `xr := x + Br0 * u`
+    Br1 = Br1 + Ar * Br0
+    Dr = D .+ C * Br0
+    Cr = C
+    nx = size(B)[1]
+    if ndims(D) == 0  # D is scalar
+        n_in = n_out = 1
+    elseif ndims(D) == 1
+        n_out = size(D)[1]
+        n_in = 1
     else
         n_out, n_in = size(D)
     end
-    y = zeros(eltype(A), nt, n_out)  # output
-    ut = reshape(input, nt, :)  # casts to a column vector if `ndims(input) == 1`
-    x = x0  # initialize state vector
-    y[1, :] .= C * x + D * ut[1, :]
-    for k = 2:nt
-        x = Ad * x + Bd * ut[k]  # Update state
-        y[k, :] = C * x .+ D * ut[k]  # Compute output
+    if maximum(abs.(E)) > 0
+        Ar = cat(Ar, -I(n_in), dims = (1, 2))
+        Cr = [Cr I(n_in)]
+        Br1 = [Br1; -4 * E / dt]
+        Dr .+= 2 * E / dt
+        x = zeros(ComplexF64, nx + n_in)
+    else
+        x = zeros(ComplexF64, nx)
+    end
+    u = reshape(input, nt, :)  # casts to a column vector if `ndims(input) == 1`
+    y = zeros(eltype(A), nt, n_out)
+    for k = 1:nt
+        y[k, :] .= Cr * x + Dr .* u[k, :]
+        x[:] .= Ar * x + Br1 .* u[k, :]  # in the next step
     end
     return y
 end
 
 
 @doc raw"""
-    convolution(poles, yt) -> y_j
+    convolution(poles, residues, yt, dt, formula = "recursive") -> y_j
 
 Calculates the convolution of the time-domain vector `y(t)` (linearly sampled
-at time intervals `dt`) with each partial fraction with given `poles`.
-Returns the matrix `y_j` of size `(length(yt), length(poles))`.
+at time intervals `dt`) with each partial fraction with given `poles` and
+`residues`. Returns the matrix `y_j` of size `(length(yt), length(poles))`.
 
 The formula used can be selected with the `formula` argument. Options are
 "recursive" (default) or "trapezoidal".
