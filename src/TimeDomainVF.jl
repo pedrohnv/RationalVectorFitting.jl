@@ -7,7 +7,7 @@ in Passive Macromodeling: Theory and Applications , Wiley, 2016, pp.225-306,
 doi: 10.1002/9781119140931.ch7.
 =#
 
-module TimeDomainVF
+module TimeDomain
 
 using LinearAlgebra
 
@@ -43,9 +43,11 @@ representation in canonical Jordan form.
 The resulting impulsive state-space system is given by:
 
 ```math
-    \frac{dx(t)}{dt} = A x(t) + B u(t)
+\frac{dx(t)}{dt} = A x(t) + B u(t)
+```
 
-    y(t) = C \dot x(t) + D \dot u(t) + E \dot \frac{du(t)}{dt}
+```math
+y(t) = C \dot x(t) + D \dot u(t) + E \dot \frac{du(t)}{dt}
 ```
 
 See also [`symmetric_rational_to_state_space`](@ref).
@@ -61,6 +63,11 @@ function rational_to_state_space(poles, residues; real_only = true, reduced = fa
     else
         throw(error("It was expected that `residues` had ndims equal to 1 or 2."))
     end
+
+    if length(poles) != np
+        throw(error("`poles` must have length `$(np)`"))
+    end
+
     residues = reshape(residues, nc, np)
     if reduced
         if real_only
@@ -145,9 +152,11 @@ into a time-domain impulsive state-space representation in canonical Jordan form
 The resulting impulsive state-space system is given by:
 
 ```math
-    \frac{dx(t)}{dt} = A x(t) + B u(t)
+\frac{dx(t)}{dt} = A x(t) + B u(t)
+```
 
-    y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
+```math
+y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
 ```
 
 See also [`rational_to_state_space`](@ref).
@@ -204,14 +213,16 @@ end
 
 
 @doc raw"""
-    simulate_state_space(A, B, C, D, E, input, x0, dt, nt)
+    simulate_state_space(A, B, C, D, E, input, dt, nt; x0)
 
 Simulation of an impulsive state-space model using trapezoidal integration.
 
 ```math
-    \frac{dx(t)}{dt} = A x(t) + B u(t)
+\frac{dx(t)}{dt} = A x(t) + B u(t)
+```
 
-    y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
+```math
+y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
 ```
 
 ### Arguments
@@ -220,15 +231,48 @@ Simulation of an impulsive state-space model using trapezoidal integration.
 - `C`: Output matrix of size `(n_out, nx)`.
 - `D`: Feedthrough of size `(n_out, n_in)`.
 - `E`: Impulsive term of size `(n_out, n_in)`.
-- `input`: input matrix of size `(nt, n_in)`.
+- `input`: input matrix `u(t)` of size `(nt, n_in)`.
 - `dt`: time step.
-- `nt`: number of time steps.
+- `nt`: number of time steps including.
+- `x0` (optional): initial state vector of size `(nx,)`. Default is zero.
 
 ### Returns
-- `output`: output matrix of size `(nt, n_out)`.
+- `output`: output matrix `y(t + dt/2)` of size `(nt, n_out)`.
+    Note that `output[1]` corresponds to `y(t = dt/2; x = x0)` because of the implicit scheme.
 """
-function simulate_state_space(A, B, C, D, E, input, dt, nt)
+function simulate_state_space(A, B, C, D, E, input, dt, nt, x0 = nothing)
     # TODO sanity check of the arguments
+    if ndims(A) == 1
+        A = reshape(A, 1, 1)
+    end
+
+    if ndims(B) == 1
+        B = reshape(B, 1, 1)
+    end
+
+    if ndims(C) == 1
+        C = reshape(C, 1, 1)
+    end
+
+    if ndims(D) == 1
+        D = reshape(D, 1, 1)
+    end
+
+    if ndims(E) == 1
+        E = reshape(E, 1, 1)
+    end
+
+    nx = size(B)[1]
+    n_out, n_in = size(D)
+
+    if x0 === nothing
+        x0 = zeros(nx)
+    end
+
+    if length(x0) < nx
+        throw(error("Initial state vector must have `length(x0) ≥ $(nx)`"))
+    end
+
     inv_I_A_dt_2 = inv(I - A * dt / 2)
     Ar = inv_I_A_dt_2 * (I + A * dt / 2)
     Br0 = inv_I_A_dt_2 * B * (dt / 2)
@@ -237,26 +281,25 @@ function simulate_state_space(A, B, C, D, E, input, dt, nt)
     Br1 = Br1 + Ar * Br0
     Dr = D .+ C * Br0
     Cr = C
-    nx = size(B)[1]
-    if ndims(D) == 0  # D is scalar
-        n_in = n_out = 1
-    elseif ndims(D) == 1
-        n_out = size(D)[1]
-        n_in = 1
-    else
-        n_out, n_in = size(D)
-    end
+
     if maximum(abs.(E)) > 0
         Ar = cat(Ar, -I(n_in), dims = (1, 2))
         Cr = [Cr I(n_in)]
         Br1 = [Br1; -4 * E / dt]
         Dr .+= 2 * E / dt
         x = zeros(ComplexF64, nx + n_in)
+        # Set initial condition for extended state
+        if length(x0) == nx
+            x[1:nx] = x0
+        else
+            x = x0
+        end
     else
-        x = zeros(ComplexF64, nx)
+        x = x0
     end
     u = reshape(input, nt, :)  # casts to a column vector if `ndims(input) == 1`
     y = zeros(eltype(A), nt, n_out)
+    # `k = 1` corresponds to `t = 0`
     for k = 1:nt
         y[k, :] .= Cr * x + Dr .* u[k, :]
         x[:] .= Ar * x + Br1 .* u[k, :]  # in the next step

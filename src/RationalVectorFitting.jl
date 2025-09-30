@@ -2,7 +2,7 @@ module RationalVectorFitting
 
 include("TimeDomainVF.jl")
 
-using .TimeDomainVF
+using .TimeDomain
 using LinearAlgebra
 
 export rational,
