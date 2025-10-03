@@ -556,15 +556,17 @@ function vector_fitting_time_domain(
 
         # QR decomposition
         Q, R = qr(AAtemp)
+        m, n = size(AAtemp)
+        k = min(m, n)
+        Q = Q[:, 1:k]
+        R = R[1:k, 1:k]
         AAA = R[(end-npol+1):end, (end-npol+1):end]
-        BBB = Q[:, (end-npol+1):end]' * BBtemp
+        BBB = transpose(Q[:, (end-npol+1):end]) * BBtemp
 
         # Scale the matrix
-        AAAT = transpose(AAA)
-        normas = norm.(eachrow(AAAT))
-        AAAaux = AAAT ./ normas
-        AAAscale = transpose(AAAaux)
-        Xaux = AAAscale \ BBB
+        normas = norm.(eachcol(AAA), 2)
+        AAAaux = AAA ./ transpose(normas)
+        Xaux = AAAaux \ BBB
         scale = 1.0 ./ normas
         XX = real(Xaux .* scale)
 
@@ -597,9 +599,9 @@ function vector_fitting_time_domain(
         end
 
         # Calculate eigenvalues
-        polaux = eigvals(Azeros - Bzeros * Czeros')
+        polaux = eigvals(Azeros - Bzeros * transpose(Czeros))
         polaux = [abs(p) < 1e-10 ? 0.0 : p for p in polaux]  # Equivalent to Chop
-        qpol = -abs.(real.(polaux)) .+ im .* imag.(polaux)
+        qpol = -abs.(real.(polaux)) .+ 1im .* imag.(polaux)
 
         # Calculate residues
         indicesffT = idxLine(qpol)
@@ -614,22 +616,23 @@ function vector_fitting_time_domain(
         BBtemp = vout[2:end]
 
         resfim = zeros(ComplexF64, npol)
-        dd = 0.0
 
         # QR decomposition for residue calculation
         Q, R = qr(AAtemp)
+        m, n = size(AAtemp)
+        k = min(m, n)
+        Q = Q[:, 1:k]
+        R = R[1:k, 1:k]
         AAA = R[
             (end-npol-has_direct_feedthrough+1):end,
             (end-npol-has_direct_feedthrough+1):end,
         ]
-        BBB = Q[:, (end-npol-has_direct_feedthrough+1):end]' * BBtemp
+        BBB = transpose(Q[:, (end-npol-has_direct_feedthrough+1):end]) * BBtemp
 
         # Scale the matrix
-        AAffT = AAA'
-        normas = norm.(eachrow(AAffT))
-        AAAaux = AAffT ./ normas
-        AAAscale = AAAaux'
-        Xaux = AAAscale \ BBB
+        normas = norm.(eachcol(AAA))
+        AAAaux = AAA ./ transpose(normas)
+        Xaux = AAAaux \ BBB
         scale = 1.0 ./ normas
         XXff = real(Xaux .* scale)
 
@@ -640,8 +643,8 @@ function vector_fitting_time_domain(
                 resfim[i] = XXff[i]
                 i += 1
             elseif indicesffT[i] == 1
-                resfim[i] = XXff[i] + im * XXff[i+1]
-                resfim[i+1] = XXff[i] - im * XXff[i+1]
+                resfim[i] = XXff[i] + 1im * XXff[i+1]
+                resfim[i+1] = XXff[i] - 1im * XXff[i+1]
                 i += 2
             else
                 i += 1
@@ -670,9 +673,6 @@ function vector_fitting_time_domain(
         rmsd = sqrt(sum(abs2.(vout - fitted)) / nt)
         pointwise_mean_abs_d = abs.(vout - fitted) ./ nt
         mean_abs_d = sum(abs.(vout - fitted)) / nt
-
-        println(rmsd)
-        println(qpol)
     end
 
     return qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d
