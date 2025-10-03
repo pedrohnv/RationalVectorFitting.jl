@@ -2,7 +2,6 @@
 
 using LinearAlgebra
 using RationalVectorFitting.TimeDomain
-using Infiltrator
 
 fid1 = split.(readlines("examples/td_surge.csv"))
 N = length(fid1) - 1
@@ -18,7 +17,7 @@ t0 = t[1]
 t = t[31:end] .- t0
 vout = vout[31:end]
 
-n = 35  # order
+n = 70  # order
 init_poles = -exp10.(range(0, 9, length = n))
 
 dt = t[2] - t[1]
@@ -29,7 +28,7 @@ vin = zeros(nt)
 vin[2] = 1 / dt
 #vin .+= 1e-12  # to avoid 1/0
 
-niter = 10
+niter = 50
 has_direct_feedthrough = true
 formula = "recursive"
 poles = qpol = init_poles
