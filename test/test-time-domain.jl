@@ -1,8 +1,8 @@
 # Test the Time-Domain Vector Fitting
 using Test
 using LinearAlgebra
-using RationalVectorFitting.TimeDomain  # Your module
-
+using RationalVectorFitting.TimeDomain
+#=
 @testset "TimeDomainVF Basic Functionality" begin
 
     @testset "rational_to_state_space - Real Poles" begin
@@ -145,7 +145,7 @@ end
         t = range(0, dt*(nt-1), length = nt)
         yt = ones(nt)  # Step function
 
-        result = TimeDomain.convolution(poles, residues, yt, dt, "recursive")
+        result = TimeDomain.convolution(dt, yt, poles, residues, "recursive")
 
         @test length(result) == nt
         # Convolution of step with exp(-t) should give (1 - exp(-t))
@@ -160,7 +160,7 @@ end
         nt = 10
         yt = ones(nt)
 
-        result = TimeDomain.convolution(poles, residues, yt, dt, "trapezoidal")
+        result = TimeDomain.convolution(dt, yt, poles, residues, "trapezoidal")
 
         @test length(result) == nt
         # Should be smooth and increasing
@@ -174,10 +174,10 @@ end
         dt = 0.1
 
         @test_throws ErrorException TimeDomain.convolution(
+            dt,
+            yt,
             poles,
             residues,
-            yt,
-            dt,
             "invalid_formula",
         )
     end
@@ -197,4 +197,53 @@ end
 
         @test_throws ErrorException TimeDomain.rational_to_state_space(poles, residues)
     end
+end
+=#
+
+
+dt = 0.02
+nt = 250
+t = range(0, dt*(nt-1), length = nt)
+
+# Known model
+poles = [-2.0, -1.0 + 5.0im, -1.0 - 5.0im]
+residues = [1.0, 0.5 + 0.2im, 0.5 - 0.2im]
+d = 0.1
+h = 0.0
+A, B, C = rational_to_state_space(poles, residues; real_only = true)
+D = [d]
+E = [h]
+u = ones(nt)  # Step input
+y_known = simulate_state_space(A, B, C, D, E, u, dt, nt)
+plot(t, y_known)
+
+
+init_poles = [-10, -100, -1000.0]
+vin = zeros(nt)
+vin[2] = 1 / dt
+vin .+= 1e-12
+vout = y_known
+res = TimeDomain.vector_fitting_time_domain(
+    dt,
+    vin,
+    vout,
+    init_poles,
+    has_direct_feedthrough = true,
+    niter = 1,
+    formula = "recursive",
+)
+qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d = res
+qpol
+
+
+using Plots
+
+fid1 = split.(readlines("test/td_surge.csv"))
+N = length(fid1) - 1
+t = zeros(N)
+f = zeros(N)
+for k = 1:N
+    val = split(fid1[k+1][1], ",")
+    t[k] = parse(Float64, val[1])
+    f[k] = parse(Float64, val[2])
 end

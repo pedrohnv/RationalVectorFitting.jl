@@ -15,6 +15,12 @@ export convolution,
     rational_to_state_space, symmetric_rational_to_state_space, simulate_state_space
 
 
+include("utils.jl")
+
+# =============================================================================
+# State Space Functions
+# =============================================================================
+
 @doc raw"""
     rational_to_state_space(poles, residues; real_only=true, reduced=false) -> A, B, C
 
@@ -241,28 +247,28 @@ y(t) = C \cdot x(t) + D \cdot u(t) + E \cdot \frac{du(t)}{dt}
     Note that `output[1]` corresponds to `y(t = dt/2; x = x0)` because of the implicit scheme.
 """
 function simulate_state_space(A, B, C, D, E, input, dt, nt, x0 = nothing)
-    # TODO sanity check of the arguments
     if ndims(A) == 1
-        A = reshape(A, 1, 1)
+        nx = size(A, 1)
+        A = reshape(A, nx, nx)
     end
 
     if ndims(B) == 1
-        B = reshape(B, 1, 1)
+        B = reshape(B, length(B), 1)
     end
 
     if ndims(C) == 1
-        C = reshape(C, 1, 1)
+        C = reshape(C, 1, length(C))
     end
 
     if ndims(D) == 1
-        D = reshape(D, 1, 1)
+        D = reshape(D, 1, length(D))
     end
 
     if ndims(E) == 1
-        E = reshape(E, 1, 1)
+        E = reshape(E, 1, length(E))
     end
 
-    nx = size(B)[1]
+    nx = size(B, 1)
     n_out, n_in = size(D)
 
     if x0 === nothing
@@ -309,20 +315,25 @@ end
 
 
 @doc raw"""
-    convolution(poles, residues, yt, dt, formula = "recursive") -> y_j
+    convolution_terms(dt, yt, poles, formula = "recursive") -> y_j
 
 Calculates the convolution of the time-domain vector `y(t)` (linearly sampled
-at time intervals `dt`) with each partial fraction with given `poles` and
-`residues`. Returns the matrix `y_j` of size `(length(yt), length(poles))`.
+at time intervals `dt`) with each partial fraction with given `poles`.
+Returns the matrix `y_j` of size `(length(yt), length(poles))`.
 
 The formula used can be selected with the `formula` argument. Options are
 "recursive" (default) or "trapezoidal".
 
+The convolution result can be obtained with
+    `[sum(y_j[k, :] .* residues) for k = 1:nt]`
+
 ```math
 \sum_{j = 1}^{N} \mathcal{L}^{-1} \left\{ \frac{1}{s - a_n} \right\} * y(t)
 ```
+
+See also [`convolution`](@ref).
 """
-function convolution(poles, residues, yt, dt, formula = "recursive")
+function convolution_terms(dt, yt, poles, formula = "recursive")
     if formula == "recursive"
         qn_dt = poles .* dt
         qn2_dt = poles .* qn_dt
@@ -350,10 +361,321 @@ function convolution(poles, residues, yt, dt, formula = "recursive")
             y_j[k, i] = alphaj[i] * y_j[k-1, i] + betaj0[i] * yt[k] + betaj1[i] * yt[k-1]
         end
     end
+    return y_j
+end
+
+
+@doc raw"""
+    convolution(dt, yt, poles, residues, formula = "recursive") -> x
+
+Calculates the convolution of the time-domain vector `y(t)` (linearly sampled
+at time intervals `dt`) with each partial fraction with given `poles` and
+`residues`. Returns the convoluted signal:
+
+```math
+x(t) = \sum_{j = 1}^{N} \mathcal{L}^{-1} \left\{ \frac{1}{s - a_n} \right\} * y(t)
+```
+
+The formula used can be selected with the `formula` argument. Options are
+"recursive" (default) or "trapezoidal".
+
+See also [`convolution_terms`](@ref).
+"""
+function convolution(dt, yt, poles, residues, formula = "recursive")
+    y_j = convolution_terms(dt, yt, poles, formula)
     return [sum(y_j[k, :] .* residues) for k = 1:nt]
 end
 
 
-# TODO time-domain vector fitting
+# =============================================================================
+# Vector Fitting
+# =============================================================================
 
-end  # module
+
+"""Identify complex conjugate pairs."""
+function idxLine(polos)
+    npol = length(polos)
+    indices = zeros(Int, npol)
+    for mm = 1:npol
+        if !isreal(polos[mm])
+            if mm == 1
+                indices[mm] = 1
+            elseif indices[mm-1] == 0 || indices[mm-1] == 2
+                indices[mm] = 1
+                if mm + 1 <= npol
+                    indices[mm+1] = 2
+                end
+            else
+                indices[mm] = 2
+            end
+        end
+    end
+    return indices
+end
+
+
+"""Process complex lines for real-valued matrix output."""
+function zAuxCompLine(z1, index)
+    npol = length(z1)
+    result = zeros(npol)
+    for mm = 1:npol
+        if index[mm] == 0
+            result[mm] = real(z1[mm])
+        elseif index[mm] == 1
+            result[mm] = 2 * real(z1[mm])
+        elseif index[mm] == 2
+            result[mm] = 2 * imag(z1[mm])
+        end
+    end
+    return result
+end
+
+
+"""Calculate coefficient matrix A for the system."""
+function coeffAA(
+    Δt,
+    vin,
+    vout,
+    poles;
+    has_direct_feedthrough = false,
+    formula = "recursive",
+)
+    npol = length(poles)
+    z1 = convolution_terms(Δt, vin, poles, formula)
+    z2 = convolution_terms(Δt, vout, poles, formula)
+
+    # Remove small values
+    z1 = [abs(z) < 1e-10 ? 0.0 : z for z in z1]
+    z2 = [abs(z) < 1e-10 ? 0.0 : z for z in z2]
+
+    nt = length(vin)
+    AAAux = zeros(ComplexF64, nt-1, 2*npol + has_direct_feedthrough)
+    AAtemp = zeros(nt-1, 2*npol + has_direct_feedthrough)
+
+    if has_direct_feedthrough
+        AAAux[:, 1:npol] = z1[2:end, :]
+        AAAux[:, npol+1] = vin[2:end]
+        AAAux[:, (npol+2):(2*npol+1)] = -z2[2:end, :]
+    else
+        AAAux[:, 1:npol] = z1[2:end, :]
+        AAAux[:, (npol+1):(2*npol)] = -z2[2:end, :]
+    end
+
+    # Process complex lines to real-valued matrix
+    for nm = 1:(nt-1)
+        indicesz1 = idxLine(AAAux[nm, :])
+        AAtemp[nm, :] = zAuxCompLine(AAAux[nm, :], indicesz1)
+    end
+
+    return AAtemp
+end
+
+
+"""Calculate coefficient matrix T for the system."""
+function coeffTT(Δt, vin, poles; has_direct_feedthrough = false, formula = "recursive")
+    npol = length(poles)
+    z1 = convolution_terms(Δt, vin, poles, formula)
+
+    # Remove small values
+    z1 = [abs(z) < 1e-10 ? 0.0 : z for z in z1]
+
+    nt = length(vin)
+    AAAux = zeros(ComplexF64, nt-1, npol + has_direct_feedthrough)
+    AAtemp = zeros(nt-1, npol + has_direct_feedthrough)
+
+    if has_direct_feedthrough
+        AAAux[:, 1:npol] = z1[2:end, :]
+        AAAux[:, npol+1] = vin[2:end]
+    else
+        AAAux[:, 1:npol] = z1[2:end, :]
+    end
+
+    # Process complex lines to real-valued matrix
+    for nm = 1:(nt-1)
+        indicesz1 = idxLine(AAAux[nm, :])
+        AAtemp[nm, :] = zAuxCompLine(AAAux[nm, :], indicesz1)
+    end
+
+    return AAtemp
+end
+
+
+"""Time-Domain Vector Fitting.
+
+### Arguments
+- Δt: time step [s]
+- vin: input vector `x(t)`. It is assumed that `vin[1] = 0`.
+- vout: output vector `y(t)`. It is assumed that `vout[1] = 0`.
+- init_poles: initial poles guess of `H(s)`
+- has_direct_feedthrough: bool to include or not a direct feedthrough term
+- niter: number of iterations
+- formula: to use in the convolution, either "trapezoidal" or "recursive"
+
+### Returns
+- new poles
+- fitted values of `y_fit(t)`
+- pointwise root mean squared difference
+- root mean squared difference
+- pointwise mean absolute difference
+- mean absolute difference
+"""
+function vector_fitting_time_domain(
+    Δt,
+    vin,
+    vout,
+    init_poles;
+    has_direct_feedthrough = false,
+    niter = 5,
+    formula = "recursive",
+)
+    if niter < 1
+        throw(ArgumentError("niter must be greater or equal to 1"))
+    end
+
+    npol = length(init_poles)
+    nt = length(vin)
+
+    qpol = copy(init_poles)
+    t = range(0, length = nt) * Δt
+
+    local qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d
+    for nn = 1:niter
+        # Calculate coefficient matrix A
+        AAtemp = coeffAA(
+            Δt,
+            vin,
+            vout,
+            qpol,
+            has_direct_feedthrough = has_direct_feedthrough,
+            formula = formula,
+        )
+        BBtemp = vout[2:end]
+
+        # Get indices for complex conjugate pairs
+        indices = idxLine(qpol)
+
+        # QR decomposition
+        Q, R = qr(AAtemp)
+        AAA = R[(end-npol+1):end, (end-npol+1):end]
+        BBB = Q[:, (end-npol+1):end]' * BBtemp
+
+        # Scale the matrix
+        AAAT = transpose(AAA)
+        normas = norm.(eachrow(AAAT))
+        AAAaux = AAAT ./ normas
+        AAAscale = transpose(AAAaux)
+        Xaux = AAAscale \ BBB
+        scale = 1.0 ./ normas
+        XX = real(Xaux .* scale)
+
+        # Build system matrices
+        Azeros = zeros(npol, npol)
+        Bzeros = zeros(npol, 1)
+        Czeros = XX[1:npol]
+
+        # Set up Bzeros based on indices
+        for mm = 1:npol
+            if indices[mm] == 0
+                Bzeros[mm] = 1.0
+            elseif indices[mm] == 1
+                Bzeros[mm] = 2.0
+            else
+                Bzeros[mm] = 0.0
+            end
+        end
+
+        # Build Azeros matrix
+        for mm = 1:npol
+            if indices[mm] == 0
+                Azeros[mm, mm] = real(qpol[mm])
+            elseif indices[mm] == 1
+                Azeros[mm, mm] = real(qpol[mm])
+                Azeros[mm, mm+1] = imag(qpol[mm])
+                Azeros[mm+1, mm] = -imag(qpol[mm])
+                Azeros[mm+1, mm+1] = real(qpol[mm])
+            end
+        end
+
+        # Calculate eigenvalues
+        polaux = eigvals(Azeros - Bzeros * Czeros')
+        polaux = [abs(p) < 1e-10 ? 0.0 : p for p in polaux]  # Equivalent to Chop
+        qpol = -abs.(real.(polaux)) .+ im .* imag.(polaux)
+
+        # Calculate residues
+        indicesffT = idxLine(qpol)
+
+        AAtemp = coeffTT(
+            Δt,
+            vin,
+            qpol,
+            has_direct_feedthrough = has_direct_feedthrough,
+            formula = formula,
+        )
+        BBtemp = vout[2:end]
+
+        resfim = zeros(ComplexF64, npol)
+        dd = 0.0
+
+        # QR decomposition for residue calculation
+        Q, R = qr(AAtemp)
+        AAA = R[
+            (end-npol-has_direct_feedthrough+1):end,
+            (end-npol-has_direct_feedthrough+1):end,
+        ]
+        BBB = Q[:, (end-npol-has_direct_feedthrough+1):end]' * BBtemp
+
+        # Scale the matrix
+        AAffT = AAA'
+        normas = norm.(eachrow(AAffT))
+        AAAaux = AAffT ./ normas
+        AAAscale = AAAaux'
+        Xaux = AAAscale \ BBB
+        scale = 1.0 ./ normas
+        XXff = real(Xaux .* scale)
+
+        # Calculate residues
+        i = 1
+        while i <= npol
+            if indicesffT[i] == 0
+                resfim[i] = XXff[i]
+                i += 1
+            elseif indicesffT[i] == 1
+                resfim[i] = XXff[i] + im * XXff[i+1]
+                resfim[i+1] = XXff[i] - im * XXff[i+1]
+                i += 2
+            else
+                i += 1
+            end
+        end
+
+        if has_direct_feedthrough
+            dd = XXff[end]
+        else
+            dd = 0.0
+        end
+
+        # Calculate output function
+        function yout(t_val)
+            result = dd
+            for n = 1:npol
+                result += resfim[n] * exp(t_val * qpol[n])
+            end
+            return result
+        end
+
+        fitted = real.(yout.(t))
+
+        # Calculate error metrics
+        pointwise_rmsd = sqrt.(abs2.(vout - fitted) ./ nt)
+        rmsd = sqrt(sum(abs2.(vout - fitted)) / nt)
+        pointwise_mean_abs_d = abs.(vout - fitted) ./ nt
+        mean_abs_d = sum(abs.(vout - fitted)) / nt
+
+        println(rmsd)
+        println(qpol)
+    end
+
+    return qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d
+end
+
+end  # Module
