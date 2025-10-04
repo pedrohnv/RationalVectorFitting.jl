@@ -48,7 +48,7 @@ qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d = res
 using Plots
 begin
     p1 = plot(t * 1e6, vout, legend = :topright, label = "data", xlabel = "Time (μs)", ylabel = "Current (kA)", title = "Time Domain Vector Fitting")
-    plot!(t * 1e6, fitted, legend = :topright, label = "fitted", xlabel = "Time (μs)", ylabel = "Current (kA)")
-    plot!(t * 1e6, vout - fitted, legend = :topright, label = "error", xlabel = "Time (μs)", ylabel = "Current (kA)")
+    plot!(t * 1e6, fitted, legend = :topright, label = "fitted")
+    plot!(t * 1e6, vout - fitted, legend = :topright, label = "error")
     display(p1)
 end
