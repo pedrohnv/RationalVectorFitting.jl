@@ -382,6 +382,7 @@ The formula used can be selected with the `formula` argument. Options are
 See also [`convolution_terms`](@ref).
 """
 function convolution(dt, yt, poles, residues, formula = "recursive")
+    nt = length(yt)
     y_j = convolution_terms(dt, yt, poles, formula)
     return [sum(y_j[k, :] .* residues) for k = 1:nt]
 end
@@ -518,6 +519,10 @@ end
 - root mean squared difference
 - pointwise mean absolute difference
 - mean absolute difference
+
+### Notes
+If `vin[1] == vout[1] == 0`, a division by zero will occur.
+Set`vin[1] = vout[1] = 1e-12` if that happens.
 """
 function vector_fitting_time_domain(
     Δt,
@@ -657,16 +662,7 @@ function vector_fitting_time_domain(
             dd = 0.0
         end
 
-        # Calculate output function
-        function yout(t_val)
-            result = dd
-            for n = 1:npol
-                result += resfim[n] * exp(t_val * qpol[n])
-            end
-            return result
-        end
-
-        fitted = real.(yout.(t))
+        fitted = real.(convolution(Δt, vin, qpol, resfim, formula)) .+ dd
 
         # Calculate error metrics
         pointwise_rmsd = sqrt.(abs2.(vout - fitted) ./ nt)

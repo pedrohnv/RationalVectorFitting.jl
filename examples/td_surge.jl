@@ -2,6 +2,7 @@
 
 using LinearAlgebra
 using RationalVectorFitting.TimeDomain
+using Plots
 
 fid1 = split.(readlines("examples/td_surge.csv"))
 N = length(fid1) - 1
@@ -13,9 +14,10 @@ for k = 1:N
     vout[k] = parse(Float64, val[2])
 end
 
-t0 = t[1]
-t = t[31:end] .- t0
-vout = vout[31:end]
+i0 = 31
+t0 = t[i0]
+t = t[i0:end] .- t0
+vout = vout[i0:end]
 
 n = 70  # order
 init_poles = -exp10.(range(0, 9, length = n))
@@ -26,10 +28,9 @@ nt = length(t)
 # impulse input
 vin = zeros(nt)
 vin[2] = 1 / dt
-#vin .+= 1e-12  # to avoid 1/0
 
 niter = 50
-has_direct_feedthrough = true
+has_direct_feedthrough = false
 formula = "recursive"
 poles = qpol = init_poles
 Δt = dt
@@ -45,9 +46,11 @@ res = TimeDomain.vector_fitting_time_domain(
 qpol, fitted, pointwise_rmsd, rmsd, pointwise_mean_abs_d, mean_abs_d = res
 @show rmsd
 
-using Plots
 begin
-    p1 = plot(t, vout)
-    plot!(t, fitted)
+    p1 = plot(xlabel = "time [μs]", ylabel = "Magnitude")
+    plot!(t*1e6, vout, label = "measured")
+    plot!(t*1e6, fitted, label = "fitted")
     display(p1)
 end
+
+@show fitted[1]
